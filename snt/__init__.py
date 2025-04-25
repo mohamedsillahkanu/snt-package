@@ -1,2 +1,3 @@
-# snt/__init__.py
-from .core import concatenate, rename, compute, split
+from .core import rename, concatenate, compute, split
+
+__all__ = ['rename', 'concatenate', 'compute', 'split']
