@@ -94,7 +94,7 @@ import pandas as pd
 import numpy as np
 
 def detect_bounds(series):
-    """Detect IQR-based lower and upper bounds for a numeric series."""
+    """Detect lower and upper bounds using IQR method."""
     series_nonan = series.dropna()
     if series_nonan.empty:
         return np.nan, np.nan
@@ -104,9 +104,8 @@ def detect_bounds(series):
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
     return lower_bound, upper_bound
-    
 
-def outliers(df, group_column_path):
+def outliers_scale_variables(df, group_column_path):
     # Read group columns
     group_columns = pd.read_excel(group_column_path)['grouped_columns'].dropna().tolist()
 
@@ -118,48 +117,47 @@ def outliers(df, group_column_path):
     df_corrected = df.copy()
 
     # Initialize summary dict
-    summary = {
-        'Variable': [],
-        'Outliers Detected': [],
-        'Outliers Corrected': []
-    }
+    outlier_counts_before = {col: 0 for col in scale_cols}
+    outlier_counts_after = {col: 0 for col in scale_cols}
 
-    for col in scale_cols:
-        # Track totals
-        total_outliers_before = 0
-        total_outliers_after = 0
+    # Group and process
+    grouped = df.groupby(group_columns)
 
-        grouped = df.groupby(group_columns)
+    for _, group_data in grouped:
+        idx = group_data.index
 
-        for _, group_data in grouped:
-            lower, upper = detect_bounds(group_data[col])
-            if np.isnan(lower) or np.isnan(upper):
-                continue
-            
-            idx = group_data.index
+        for col in scale_cols:
+            if col in group_data.columns:
+                lower, upper = detect_bounds(group_data[col])
 
-            # Count before
-            total_outliers_before += ((df_corrected.loc[idx, col] < lower) | 
-                                      (df_corrected.loc[idx, col] > upper)).sum()
+                # 🛠 Correct safe check
+                if pd.isna(lower) or pd.isna(upper):
+                    continue
 
-            # Clip (correct)
-            df_corrected.loc[idx, col] = df_corrected.loc[idx, col].clip(lower=lower, upper=upper)
+                # Count before correction
+                before_mask = (df_corrected.loc[idx, col] < lower) | (df_corrected.loc[idx, col] > upper)
+                outliers_before = before_mask.sum()
 
-            # Count after
-            total_outliers_after += ((df_corrected.loc[idx, col] < lower) | 
-                                     (df_corrected.loc[idx, col] > upper)).sum()
+                # Clip values
+                df_corrected.loc[idx, col] = df_corrected.loc[idx, col].clip(lower=lower, upper=upper)
 
-        # Add to summary
-        summary['Variable'].append(col)
-        summary['Outliers Detected'].append(total_outliers_before)
-        summary['Outliers Corrected'].append(total_outliers_before - total_outliers_after)
+                # Count after correction
+                after_mask = (df_corrected.loc[idx, col] < lower) | (df_corrected.loc[idx, col] > upper)
+                outliers_after = after_mask.sum()
 
-    # Convert to DataFrame
-    summary_df = pd.DataFrame(summary)
-  
-    # Show summary
-    print(summary_df)
+                # Track
+                outlier_counts_before[col] += outliers_before
+                outlier_counts_after[col] += outliers_after
+
+    # Create summary DataFrame
+    summary_df = pd.DataFrame({
+        'Variable': list(outlier_counts_before.keys()),
+        'Outliers Detected': list(outlier_counts_before.values()),
+        'Outliers Corrected': [outlier_counts_before[col] - outlier_counts_after[col] for col in scale_cols]
+    })
+
     return df_corrected, summary_df
+
 
 
 
