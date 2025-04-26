@@ -55,15 +55,27 @@ def sort(df, compute_path):
 
 
 def split(df, split_path):
-    # Read the split instructions
-    split_info = pd.read_excel(split_path)
+    # Read the mapping Excel file
+    mapping = pd.read_excel(split_path)
 
-    # Extract the relevant column names
-    original_col = split_info['original_col'][0]
-    new_col_month = split_info['new_col_month'][0]
-    new_col_year = split_info['new_col_year'][0]
+    # Get names
+    original_col = mapping['original_col'].iloc[0]
+    new_col_month = mapping['new_col_month'].iloc[0]
+    new_col_year = mapping['new_col_year'].iloc[0]
 
-    # Split the original column into month and year
-    df[[new_col_month, new_col_year]] = df[original_col].str.split(' ', expand=True)
+    # Split the original column
+    split_data = df[original_col].str.split(' ', expand=True)
+
+    # Assign to new columns
+    df[new_col_month] = split_data[0]
+    df[new_col_year] = split_data[1]
+
+    # Map month names to numbers
+    month_map = {
+        'January': '01', 'February': '02', 'March': '03', 'April': '04',
+        'May': '05', 'June': '06', 'July': '07', 'August': '08',
+        'September': '09', 'October': '10', 'November': '11', 'December': '12'
+    }
+    df[new_col_month] = df[new_col_month].map(month_map)
+
     return df
-
