@@ -105,7 +105,7 @@ def detect_bounds(series):
     upper_bound = Q3 + 1.5 * IQR
     return lower_bound, upper_bound
 
-def outliers_scale_variables(df, group_column_path):
+def outliers(df, group_column_path):
     # Read group columns
     group_columns = pd.read_excel(group_column_path)['grouped_columns'].dropna().tolist()
 
@@ -157,9 +157,5 @@ def outliers_scale_variables(df, group_column_path):
     })
 
     return df_corrected, summary_df
-
-
-
-
 
 
