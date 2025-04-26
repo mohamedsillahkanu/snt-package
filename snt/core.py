@@ -34,18 +34,22 @@ def sort(df, compute_path):
     # Read the compute instructions
     comp = pd.read_excel(compute_path)
 
-    # Extract components and new variables
-    components = [x.strip() for x in ','.join(comp['components'].dropna()).split(',')]
-    new_variables = comp['new_variable'].dropna().tolist()
+    sorted_columns = []
+    
+    # For each row in compute_path
+    for i in range(len(comp)):
+        components = [x.strip() for x in comp['components'][i].split(',')]
+        new_var = comp['new_variable'][i]
+        
+        sorted_columns.extend(components)
+        sorted_columns.append(new_var)
 
-    # Identify other columns (not in components or new variables)
-    other_columns = [col for col in df.columns if col not in components + new_variables]
-
-    # New sorted order: other columns -> components -> new variables
-    sorted_columns = other_columns + components + new_variables
+    # Add any remaining columns that were not mentioned
+    remaining_columns = [col for col in df.columns if col not in sorted_columns]
+    final_order = remaining_columns + sorted_columns
 
     # Reorder the DataFrame
-    df_sorted = df[sorted_columns]
+    df_sorted = df[final_order]
 
     return df_sorted
 
