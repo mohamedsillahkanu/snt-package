@@ -31,18 +31,20 @@ def compute(df, compute_path):
 
 
 def sort(df, compute_path):
-    # Read the compute instructions from the Excel file
+    # Read the compute instructions
     comp = pd.read_excel(compute_path)
 
-    # Get the components and new variables
+    # Extract components and new variables
     components = [x.strip() for x in ','.join(comp['components'].dropna()).split(',')]
     new_variables = comp['new_variable'].dropna().tolist()
 
-    # Combine components and new variables
-    sorted_columns = components + new_variables
+    # Identify other columns (not in components or new variables)
+    other_columns = [col for col in df.columns if col not in components + new_variables]
 
-    # Sort the DataFrame by the new column order
-    sorted_columns += [col for col in df.columns if col not in sorted_columns]
+    # New sorted order: other columns -> components -> new variables
+    sorted_columns = other_columns + components + new_variables
+
+    # Reorder the DataFrame
     df_sorted = df[sorted_columns]
 
     return df_sorted
