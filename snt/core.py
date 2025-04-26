@@ -23,7 +23,7 @@ def compute(df, compute_path):
         components = [x.strip() for x in comp['components'][i].split(',')]
 
         if op == "rowsum":
-            df[new_var] = df[components].sum(axis=1, skipna=True)
+            df[new_var] = df[components].sum(axis=1, skipna=True, min_count=1)
         elif op == "subtract":
             df[new_var] = df[components[0]] - df[components[1]]
             df[new_var] = df[new_var].clip(lower=0)
