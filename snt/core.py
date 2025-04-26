@@ -64,6 +64,6 @@ def split(df, split_path):
     new_col_year = split_info['new_col_year'][0]
 
     # Split the original column into month and year
-    df[[new_col_month, new_col_year]] = df[original_col].str.split(' ', 1, expand=True)
+    df[[new_col_month, new_col_year]] = df[original_col].str.split(' ', expand=True)
     return df
 
