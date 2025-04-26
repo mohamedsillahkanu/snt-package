@@ -55,7 +55,15 @@ def sort(df, compute_path):
 
 
 def split(df, split_path):
-    split_cols = pd.read_excel(split_path)['columns'].tolist()
-    id_vars = [col for col in df.columns if col not in split_cols]
-    return pd.melt(df, id_vars=id_vars, value_vars=split_cols,
-                   var_name='variable', value_name='value')
+    # Read the split instructions
+    split_info = pd.read_excel(split_path)
+
+    # Extract the relevant column names
+    original_col = split_info['original_col'][0]
+    new_col_month = split_info['new_col_month'][0]
+    new_col_year = split_info['new_col_year'][0]
+
+    # Split the original column into month and year
+    df[[new_col_month, new_col_year]] = df[original_col].str.split(' ', 1, expand=True)
+    return df
+
