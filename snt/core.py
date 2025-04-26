@@ -93,13 +93,13 @@ def split(df, split_path):
 def outliers(df, group_column_path):
     # Read group columns
     group_columns = pd.read_excel(group_column_path)['grouped_columns'].dropna().tolist()
-    
+
     # Automatically detect numeric columns
     numeric_cols = df.select_dtypes(include='number').columns.tolist()
-    
-    # Exclude 'month' if it exists
+
+    # Exclude 'month' if present
     numeric_cols = [col for col in numeric_cols if col.lower() != 'month']
-    
+
     # Initialize outlier statistics
     outlier_stats = {
         'Group': [],
@@ -107,10 +107,13 @@ def outliers(df, group_column_path):
         'Outliers Before Correction': [],
         'Outliers After Correction': []
     }
-    
+
+    # Create a copy of df to modify
+    df_corrected = df.copy()
+
     # Group the dataframe
     grouped = df.groupby(group_columns)
-    
+
     # Process each group
     for group_name, group_data in grouped:
         for col in numeric_cols:
@@ -124,33 +127,32 @@ def outliers(df, group_column_path):
                     lower_bound = Q1 - 1.5 * IQR
                     upper_bound = Q3 + 1.5 * IQR
                     
-                    # Count outliers before (skip NA)
+                    # Locate the indices of this group
+                    idx = group_data.index
+                    
+                    # Clip values for this group
+                    clipped = group_data[col].clip(lower=lower_bound, upper=upper_bound)
+                    
+                    # Update df_corrected safely
+                    df_corrected.loc[idx, col] = clipped
+
+                    # Outlier count
                     outliers_before = ((series_nonan < lower_bound) | (series_nonan > upper_bound)).sum()
-                    
-                    # Clip the full series (keeping NaNs)
-                    clipped_series = group_data[col].clip(lower=lower_bound, upper=upper_bound)
-                    
-                    # Now assign properly (no shape problem)
-                    df.loc[clipped_series.index, col] = clipped_series
-                    
-                    # Count outliers after
-                    series_corrected_nonan = clipped_series.dropna()
-                    outliers_after = ((series_corrected_nonan < lower_bound) | (series_corrected_nonan > upper_bound)).sum()
+                    outliers_after = ((clipped.dropna() < lower_bound) | (clipped.dropna() > upper_bound)).sum()
                     
                     # Record stats
                     outlier_stats['Group'].append(str(group_name))
                     outlier_stats['Variable'].append(col)
                     outlier_stats['Outliers Before Correction'].append(outliers_before)
                     outlier_stats['Outliers After Correction'].append(outliers_after)
-    
-    # Create a summary DataFrame
+
+    # Create summary DataFrame
     summary_df = pd.DataFrame(outlier_stats)
-    # Display the summary
     print("\nOutlier Summary:")
     print(summary_df)
-    
-    # Return the corrected DataFrame
-    return df
+
+    return df_corrected
+
 
 
 
