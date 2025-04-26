@@ -53,7 +53,6 @@ def sort(df, compute_path):
 
     return df_sorted
 
-
 def split(df, split_path):
     # Read the mapping Excel file
     mapping = pd.read_excel(split_path)
@@ -70,12 +69,24 @@ def split(df, split_path):
     df[new_col_month] = split_data[0]
     df[new_col_year] = split_data[1]
 
-    # Map month names to numbers
+    # Define month mappings (English and French)
     month_map = {
-        'January': '01', 'February': '02', 'March': '03', 'April': '04',
-        'May': '05', 'June': '06', 'July': '07', 'August': '08',
-        'September': '09', 'October': '10', 'November': '11', 'December': '12'
+        'January': '01', 'Janvier': '01',
+        'February': '02', 'Février': '02', 'Fevrier': '02',
+        'March': '03', 'Mars': '03',
+        'April': '04', 'Avril': '04',
+        'May': '05', 'Mai': '05',
+        'June': '06', 'Juin': '06',
+        'July': '07', 'Juillet': '07',
+        'August': '08', 'Août': '08', 'Aout': '08',
+        'September': '09', 'Septembre': '09',
+        'October': '10', 'Octobre': '10',
+        'November': '11', 'Novembre': '11',
+        'December': '12', 'Décembre': '12', 'Decembre': '12'
     }
-    df[new_col_month] = df[new_col_month].map(month_map)
+
+    # Replace month names
+    df[new_col_month] = df[new_col_month].map(lambda x: month_map.get(x, x))
 
     return df
+
