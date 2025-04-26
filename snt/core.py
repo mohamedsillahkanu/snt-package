@@ -15,19 +15,54 @@ def rename(df, dict_path):
         df.rename(columns={old: new}, inplace=True)
     return df
 
+
 def compute(df, compute_path):
+    # Step 1: Read and sort compute instructions
     comp = pd.read_excel(compute_path)
-    for i in range(len(comp)):
-        new_var = comp['new_variable'][i]
-        op = comp['operation'][i]
-        components = [x.strip() for x in comp['components'][i].split(',')]
+
+    # Separate original variables (operation is NaN) and computed variables (operation is not NaN)
+    originals = comp[comp['operation'].isna()]
+    computed = comp[comp['operation'].notna()]
+
+    # New list for sorted rows
+    sorted_rows = []
+    added = set()
+
+    for idx, row in computed.iterrows():
+        # Add components first
+        components = [x.strip() for x in str(row['components']).split(',')]
+        for comp_var in components:
+            if comp_var not in added:
+                sorted_rows.append({'new_variable': comp_var, 'operation': None, 'components': None})
+                added.add(comp_var)
+        
+        # Add computed variable
+        if row['new_variable'] not in added:
+            sorted_rows.append(row)
+            added.add(row['new_variable'])
+
+    # Convert back to DataFrame
+    sorted_comp = pd.DataFrame(sorted_rows)
+
+    # Step 2: Now compute based on sorted instructions
+    for i in range(len(sorted_comp)):
+        new_var = sorted_comp['new_variable'][i]
+        op = sorted_comp['operation'][i]
+        components = sorted_comp['components'][i]
+
+        if pd.isna(op) or pd.isna(components):
+            continue  # skip if no operation
+
+        components = [x.strip() for x in components.split(',')]
 
         if op == "rowsum":
             df[new_var] = df[components].sum(axis=1, skipna=True)
         elif op == "subtract":
             df[new_var] = df[components[0]] - df[components[1]]
             df[new_var] = df[new_var].clip(lower=0)
+
     return df
+
 
 def split(df, split_path):
     split_cols = pd.read_excel(split_path)['columns'].tolist()
