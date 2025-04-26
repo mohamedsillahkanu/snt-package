@@ -131,7 +131,7 @@ def outliers(df, group_column_path):
                 lower, upper = detect_bounds(group_data[col])
 
                 # 🛠 Correct safe check
-                if pd.isna(lower) or pd.isna(upper):
+                if np.isnan(lower) or np.isnan(upper):
                     continue
 
                 # Count before correction
@@ -157,5 +157,3 @@ def outliers(df, group_column_path):
     })
 
     return df_corrected, summary_df
-
-
