@@ -29,7 +29,6 @@ def compute(df, compute_path):
             df[new_var] = df[new_var].clip(lower=0)
     return df
 
-
 def sort(df, compute_path):
     # Read the compute instructions
     comp = pd.read_excel(compute_path)
@@ -89,4 +88,66 @@ def split(df, split_path):
     df[new_col_month] = df[new_col_month].map(lambda x: month_map.get(x, x))
 
     return df
+
+
+
+
+# Outlier
+def outliers(df, group_column_path, variables_path):
+    # Read the Excel files
+    group_columns = pd.read_excel(group_column_path)['grouped_columns'].dropna().tolist()
+    compute_instructions = pd.read_excel(variables_path)
+    
+    # Get the list of variables (components + new_variables)
+    new_variables = compute_instructions['new_variable'].dropna().tolist()
+    components = compute_instructions['components'].dropna().tolist()
+    variables = new_variables + components
+
+    # Initialize outlier statistics
+    outlier_stats = {
+        'Group': [],
+        'Variable': [],
+        'Outliers Before Correction': [],
+        'Outliers After Correction': []
+    }
+
+    # Group the dataframe
+    grouped = df.groupby(group_columns)
+
+    # Process each group
+    for group_name, group_data in grouped:
+        for col in variables:
+            if col in group_data.columns:
+                Q1 = group_data[col].quantile(0.25)
+                Q3 = group_data[col].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+
+                # Count outliers before
+                outliers_before = ((group_data[col] < lower_bound) | (group_data[col] > upper_bound)).sum()
+
+                # Winsorize (clip)
+                df.loc[group_data.index, col] = group_data[col].clip(lower=lower_bound, upper=upper_bound)
+
+                # Count outliers after
+                group_data_corrected = df.loc[group_data.index]
+                outliers_after = ((group_data_corrected[col] < lower_bound) | (group_data_corrected[col] > upper_bound)).sum()
+
+                # Record the stats
+                outlier_stats['Group'].append(str(group_name))
+                outlier_stats['Variable'].append(col)
+                outlier_stats['Outliers Before Correction'].append(outliers_before)
+                outlier_stats['Outliers After Correction'].append(outliers_after)
+
+    # Create a summary DataFrame
+    summary_df = pd.DataFrame(outlier_stats)
+
+    # Display the summary
+    print("\nOutlier Summary:")
+    print(summary_df)
+
+    # Return the corrected df
+    return df
+
 
