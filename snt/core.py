@@ -93,6 +93,19 @@ def split(df, split_path):
 import pandas as pd
 import numpy as np
 
+def detect_bounds(series):
+    """Detect IQR-based lower and upper bounds for a numeric series."""
+    series_nonan = series.dropna()
+    if series_nonan.empty:
+        return np.nan, np.nan
+    Q1 = series_nonan.quantile(0.25)
+    Q3 = series_nonan.quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    return lower_bound, upper_bound
+    
+
 def outliers(df, group_column_path):
     # Read group columns
     group_columns = pd.read_excel(group_column_path)['grouped_columns'].dropna().tolist()
