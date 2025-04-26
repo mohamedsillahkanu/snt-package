@@ -90,97 +90,64 @@ def split(df, split_path):
     return df
 
 # Outlier
+import pandas as pd
+import numpy as np
+
 def outliers(df, group_column_path):
     # Read group columns
     group_columns = pd.read_excel(group_column_path)['grouped_columns'].dropna().tolist()
-    
-    # Key variables for summary reporting only
-    key_variables = ['allout', 'susp', 'test', 'conf', 'maltreat', 'pres']
-    
-    # Filter to only include existing key variables
-    key_variables = [col for col in key_variables if col in df.columns]
-    
-    # Get all numeric columns for outlier detection
-    numeric_cols = df.select_dtypes(include='number').columns.tolist()
-    
-    # Exclude 'month' if present
-    numeric_cols = [col for col in numeric_cols if col.lower() != 'month']
 
-    # Initialize outlier statistics for key variables
-    variable_stats = {
-        'Year': [],
+    # Get all numeric columns except 'month'
+    scale_cols = df.select_dtypes(include='number').columns.tolist()
+    scale_cols = [col for col in scale_cols if col.lower() != 'month']
+
+    # Copy to modify
+    df_corrected = df.copy()
+
+    # Initialize summary dict
+    summary = {
         'Variable': [],
-        'Outliers Before': [],
-        'Outliers After': []
+        'Outliers Detected': [],
+        'Outliers Corrected': []
     }
 
-    # Create a copy of df to modify
-    df_corrected = df.copy()
-    
-    # Assume 'year' is one of the columns in your dataframe
-    years = df['year'].unique() if 'year' in df.columns else [None]
-    
-    # Process each year
-    for year in years:
-        # Filter data for this year if year column exists
-        if year is not None:
-            year_data = df[df['year'] == year]
-        else:
-            year_data = df
-        
-        # Group the year data
-        grouped = year_data.groupby(group_columns)
-        
-        # Track outliers for key variables in this year
-        year_var_outliers_before = {var: 0 for var in key_variables}
-        year_var_outliers_after = {var: 0 for var in key_variables}
-        
-        # Process each group
-        for group_name, group_data in grouped:
-            for col in numeric_cols:  # Process ALL numeric columns
-                if col in group_data.columns:
-                    series_nonan = group_data[col].dropna()
-                    
-                    if not series_nonan.empty:
-                        Q1 = series_nonan.quantile(0.25)
-                        Q3 = series_nonan.quantile(0.75)
-                        IQR = Q3 - Q1
-                        lower_bound = Q1 - 1.5 * IQR
-                        upper_bound = Q3 + 1.5 * IQR
-                        
-                        # Get the indices of this group
-                        idx = group_data.index
-                        
-                        # Count outliers before correction
-                        outliers_before = ((df_corrected.loc[idx, col] < lower_bound) | 
-                                          (df_corrected.loc[idx, col] > upper_bound)).sum()
-                        
-                        # Clip values for this group
-                        df_corrected.loc[idx, col] = df_corrected.loc[idx, col].clip(lower=lower_bound, upper=upper_bound)
-                        
-                        # Count outliers after correction
-                        outliers_after = ((df_corrected.loc[idx, col] < lower_bound) | 
-                                         (df_corrected.loc[idx, col] > upper_bound)).sum()
-                        
-                        # Track statistics only for key variables
-                        if col in key_variables:
-                            year_var_outliers_before[col] += outliers_before
-                            year_var_outliers_after[col] += outliers_after
-        
-        # Record statistics for key variables in this year
-        for key_var in key_variables:
-            if year_var_outliers_before[key_var] > 0:  # Only include if outliers were found
-                variable_stats['Year'].append(year if year is not None else 'All')
-                variable_stats['Variable'].append(key_var)
-                variable_stats['Outliers Before'].append(year_var_outliers_before[key_var])
-                variable_stats['Outliers After'].append(year_var_outliers_after[key_var])
+    for col in scale_cols:
+        # Track totals
+        total_outliers_before = 0
+        total_outliers_after = 0
 
-    # Create summary DataFrame
-    summary_df = pd.DataFrame(variable_stats)
-    print("\nOutlier Summary for Key Variables by Year:")
+        grouped = df.groupby(group_columns)
+
+        for _, group_data in grouped:
+            lower, upper = detect_bounds(group_data[col])
+            if np.isnan(lower) or np.isnan(upper):
+                continue
+            
+            idx = group_data.index
+
+            # Count before
+            total_outliers_before += ((df_corrected.loc[idx, col] < lower) | 
+                                      (df_corrected.loc[idx, col] > upper)).sum()
+
+            # Clip (correct)
+            df_corrected.loc[idx, col] = df_corrected.loc[idx, col].clip(lower=lower, upper=upper)
+
+            # Count after
+            total_outliers_after += ((df_corrected.loc[idx, col] < lower) | 
+                                     (df_corrected.loc[idx, col] > upper)).sum()
+
+        # Add to summary
+        summary['Variable'].append(col)
+        summary['Outliers Detected'].append(total_outliers_before)
+        summary['Outliers Corrected'].append(total_outliers_before - total_outliers_after)
+
+    # Convert to DataFrame
+    summary_df = pd.DataFrame(summary)
+  
+    # Show summary
     print(summary_df)
+    return df_corrected, summary_df
 
-    return df_corrected
 
 
 
