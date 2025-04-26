@@ -94,67 +94,73 @@ def split(df, split_path):
 import pandas as pd
 import numpy as np
 
-def detect_bounds(series):
-    """Detect lower and upper bounds using IQR method."""
-    series_nonan = series.dropna()
-    if series_nonan.empty:
-        return np.nan, np.nan
-    Q1 = series_nonan.quantile(0.25)
-    Q3 = series_nonan.quantile(0.75)
+# Function to detect outliers using Scatterplot with Q1 and Q3 lines
+def detect_outliers_scatterplot(df, col):
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
     IQR = Q3 - Q1
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
     return lower_bound, upper_bound
 
-def detect_bounds(series):
-    """Detect lower and upper bounds using the IQR method."""
-    series_nonan = series.dropna()
-    if series_nonan.empty:
-        return np.nan, np.nan
-    Q1 = series_nonan.quantile(0.25)
-    Q3 = series_nonan.quantile(0.75)
-    IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
-    return lower_bound, upper_bound
+# Function to apply winsorization to a column
+def winsorize_series(series, lower_bound, upper_bound):
+    return series.clip(lower=lower_bound, upper=upper_bound)
 
-def outliers(df, group_column_path):
-    # Read group columns
-    group_columns = pd.read_excel(group_column_path)['grouped_columns'].dropna().tolist()
+# Function to process and export the results for all numeric columns using Winsorization
+def outliers(df, grouped_columns_path):
+    # Load the grouped columns from Excel
+    grouped_columns_df = pd.read_excel(grouped_columns_path)
 
-    # Get all numeric columns except 'month'
-    scale_cols = df.select_dtypes(include='number').columns.tolist()
-    scale_cols = [col for col in scale_cols if col.lower() != 'month']
+    # Strip any leading/trailing spaces in column names
+    grouped_columns_df.columns = grouped_columns_df.columns.str.strip()
 
-    # Copy to modify
-    df_corrected = df.copy()
+    # Extract the column names that should be used for grouping from the Excel file
+    group_columns = list(grouped_columns_df.columns)
 
-    # Group and process
+    # Ensure 'year' is included in the group columns
+    if 'year' not in group_columns:
+        raise ValueError("'year' must be part of the group columns. Columns available: " + ", ".join(group_columns))
+
+    # Group by the columns extracted from the Excel file (including 'year')
     grouped = df.groupby(group_columns)
 
-    for _, group_data in grouped:
-        idx = group_data.index
+    results = []
+    
+    # Auto-detect numeric columns
+    numeric_columns = df.select_dtypes(include=np.number).columns
 
-        for col in scale_cols:
-            if col in group_data.columns:
-                lower, upper = detect_bounds(group_data[col])
+    for numeric_column in numeric_columns:
+        for group_keys, group in grouped:
+            # Perform outlier detection and Winsorization for the numeric column
+            lower_bound, upper_bound = detect_outliers_scatterplot(group, numeric_column)
+            group[f'{numeric_column}_lower_bound'] = lower_bound
+            group[f'{numeric_column}_upper_bound'] = upper_bound
+            group[f'{numeric_column}_category'] = np.where(
+                (group[numeric_column] < lower_bound) | (group[numeric_column] > upper_bound), 'Outlier', 'Non-Outlier'
+            )
+            group[f'{numeric_column}_winsorized'] = winsorize_series(group[numeric_column], lower_bound, upper_bound)
+            results.append(group)
 
-                # 🛠 Skip if bounds are not available
-                if np.isnan(lower) or np.isnan(upper):
-                    continue
+    final_df = pd.concat(results)
 
-                # Mark outliers
-                outlier_mask = (df_corrected.loc[idx, col] < lower) | (df_corrected.loc[idx, col] > upper)
+    # Prepare the columns to export
+    export_columns = [
+        'adm1', 'adm2', 'adm3', 'hf', 'hf_uid', 'year', 'month', 'date'
+    ]
+    for numeric_column in numeric_columns:
+        export_columns.extend([
+            numeric_column,
+            f'{numeric_column}_category',
+            f'{numeric_column}_lower_bound',
+            f'{numeric_column}_upper_bound',
+            f'{numeric_column}_winsorized'
+        ])
 
-                # Add outlier/non-outlier column
-                df_corrected[f'{col}_outlier'] = np.where(outlier_mask, 'outlier', 'non-outlier')
+    export_columns = [col for col in export_columns if col in final_df.columns]
 
-                # Correct outliers by clipping
-                df_corrected.loc[idx, col] = df_corrected.loc[idx, col].clip(lower=lower, upper=upper)
+    return final_df[export_columns]
 
-                # Store bounds as new columns
-                df_corrected[f'{col}_lower_bound'] = lower
-                df_corrected[f'{col}_upper_bound'] = upper
+# result = process_all_numeric_columns(df, grouped_columns_path)
 
-    return df_corrected
 
