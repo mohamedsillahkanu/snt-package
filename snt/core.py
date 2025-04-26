@@ -115,28 +115,29 @@ def outliers(df, group_column_path):
     for group_name, group_data in grouped:
         for col in numeric_cols:
             if col in group_data.columns:
-                series = group_data[col].dropna()  # Ignore NaNs
+                series_nonan = group_data[col].dropna()
                 
-                if not series.empty:
-                    Q1 = series.quantile(0.25)
-                    Q3 = series.quantile(0.75)
+                if not series_nonan.empty:
+                    Q1 = series_nonan.quantile(0.25)
+                    Q3 = series_nonan.quantile(0.75)
                     IQR = Q3 - Q1
                     lower_bound = Q1 - 1.5 * IQR
                     upper_bound = Q3 + 1.5 * IQR
                     
                     # Count outliers before (skip NA)
-                    outliers_before = ((series < lower_bound) | (series > upper_bound)).sum()
+                    outliers_before = ((series_nonan < lower_bound) | (series_nonan > upper_bound)).sum()
                     
-                    # Clip values (Winsorize) but preserve NaN
-                    clipped = group_data[col].clip(lower=lower_bound, upper=upper_bound)
-                    df.loc[group_data.index, col] = clipped
+                    # Clip the full series (keeping NaNs)
+                    clipped_series = group_data[col].clip(lower=lower_bound, upper=upper_bound)
+                    
+                    # Now assign properly (no shape problem)
+                    df.loc[clipped_series.index, col] = clipped_series
                     
                     # Count outliers after
-                    group_data_corrected = df.loc[group_data.index]
-                    series_corrected = group_data_corrected[col].dropna()
-                    outliers_after = ((series_corrected < lower_bound) | (series_corrected > upper_bound)).sum()
+                    series_corrected_nonan = clipped_series.dropna()
+                    outliers_after = ((series_corrected_nonan < lower_bound) | (series_corrected_nonan > upper_bound)).sum()
                     
-                    # Record the stats
+                    # Record stats
                     outlier_stats['Group'].append(str(group_name))
                     outlier_stats['Variable'].append(col)
                     outlier_stats['Outliers Before Correction'].append(outliers_before)
@@ -150,5 +151,6 @@ def outliers(df, group_column_path):
     
     # Return the corrected DataFrame
     return df
+
 
 
