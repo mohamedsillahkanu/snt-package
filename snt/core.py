@@ -89,20 +89,17 @@ def split(df, split_path):
 
     return df
 
-
-
-
 # Outlier
-def outliers(df, group_column_path, variables_path):
-    # Read the Excel files
+def outliers(df, group_column_path):
+    # Read group columns
     group_columns = pd.read_excel(group_column_path)['grouped_columns'].dropna().tolist()
-    compute_instructions = pd.read_excel(variables_path)
     
-    # Get the list of variables (components + new_variables)
-    new_variables = compute_instructions['new_variable'].dropna().tolist()
-    components = compute_instructions['components'].dropna().tolist()
-    variables = new_variables + components
-
+    # Automatically detect numeric columns
+    numeric_cols = df.select_dtypes(include='number').columns.tolist()
+    
+    # Exclude 'month' if it exists
+    numeric_cols = [col for col in numeric_cols if col.lower() != 'month']
+    
     # Initialize outlier statistics
     outlier_stats = {
         'Group': [],
@@ -110,44 +107,48 @@ def outliers(df, group_column_path, variables_path):
         'Outliers Before Correction': [],
         'Outliers After Correction': []
     }
-
+    
     # Group the dataframe
     grouped = df.groupby(group_columns)
-
+    
     # Process each group
     for group_name, group_data in grouped:
-        for col in variables:
+        for col in numeric_cols:
             if col in group_data.columns:
-                Q1 = group_data[col].quantile(0.25)
-                Q3 = group_data[col].quantile(0.75)
-                IQR = Q3 - Q1
-                lower_bound = Q1 - 1.5 * IQR
-                upper_bound = Q3 + 1.5 * IQR
-
-                # Count outliers before
-                outliers_before = ((group_data[col] < lower_bound) | (group_data[col] > upper_bound)).sum()
-
-                # Winsorize (clip)
-                df.loc[group_data.index, col] = group_data[col].clip(lower=lower_bound, upper=upper_bound)
-
-                # Count outliers after
-                group_data_corrected = df.loc[group_data.index]
-                outliers_after = ((group_data_corrected[col] < lower_bound) | (group_data_corrected[col] > upper_bound)).sum()
-
-                # Record the stats
-                outlier_stats['Group'].append(str(group_name))
-                outlier_stats['Variable'].append(col)
-                outlier_stats['Outliers Before Correction'].append(outliers_before)
-                outlier_stats['Outliers After Correction'].append(outliers_after)
-
+                series = group_data[col].dropna()  # Ignore NaNs
+                
+                if not series.empty:
+                    Q1 = series.quantile(0.25)
+                    Q3 = series.quantile(0.75)
+                    IQR = Q3 - Q1
+                    lower_bound = Q1 - 1.5 * IQR
+                    upper_bound = Q3 + 1.5 * IQR
+                    
+                    # Count outliers before (skip NA)
+                    outliers_before = ((series < lower_bound) | (series > upper_bound)).sum()
+                    
+                    # Clip values (Winsorize) but preserve NaN
+                    clipped = group_data[col].clip(lower=lower_bound, upper=upper_bound)
+                    df.loc[group_data.index, col] = clipped
+                    
+                    # Count outliers after
+                    group_data_corrected = df.loc[group_data.index]
+                    series_corrected = group_data_corrected[col].dropna()
+                    outliers_after = ((series_corrected < lower_bound) | (series_corrected > upper_bound)).sum()
+                    
+                    # Record the stats
+                    outlier_stats['Group'].append(str(group_name))
+                    outlier_stats['Variable'].append(col)
+                    outlier_stats['Outliers Before Correction'].append(outliers_before)
+                    outlier_stats['Outliers After Correction'].append(outliers_after)
+    
     # Create a summary DataFrame
     summary_df = pd.DataFrame(outlier_stats)
-
     # Display the summary
     print("\nOutlier Summary:")
     print(summary_df)
-
-    # Return the corrected df
+    
+    # Return the corrected DataFrame
     return df
 
 
