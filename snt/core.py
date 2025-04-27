@@ -94,44 +94,95 @@ def split(df, split_path):
 import pandas as pd
 import numpy as np
 
-# Function to detect outliers using IQR method for all numeric columns in the dataframe within groups
-def detect_outliers(df):
-    # Filter for numeric columns only
-    numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+# Function to detect outliers using Scatterplot with Q1 and Q3 lines
+def detect_outliers_scatterplot(df, col):
     
-    # Group the data by 'hf_uid' and 'year'
-    grouped = df.groupby(['adm1','adm2','adm3','hf','year'])
+    # Calculate Q1 and Q3
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    
+    # Calculate the lower and upper bounds for outliers
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    
+    return lower_bound, upper_bound
 
-    # Initialize an empty list to store processed groups
-    processed_groups = []
+# Function to apply winsorization to a column
+def winsorize_series(series, lower_bound, upper_bound):
+  
+    # Clip the values that are outside the bounds
+    return series.clip(lower=lower_bound, upper=upper_bound)
 
-    # Loop through each group
-    for (hf_uid, year), group in grouped:
-        for column in numeric_columns:
-            # Calculate Q1, Q3, and IQR for the column within each group
-            Q1 = group[column].quantile(0.25)
-            Q3 = group[column].quantile(0.75)
-            IQR = Q3 - Q1
-            
-            # Calculate the lower and upper bounds for outliers
-            lower_bound = Q1 - 1.5 * IQR
-            upper_bound = Q3 + 1.5 * IQR
-            
-            # Create a new column to classify values as Outlier or Non-Outlier
-            group[f'{column}_outlier_category'] = np.where(
-                (group[column] < lower_bound) | (group[column] > upper_bound), 'Outlier', 'Non-Outlier'
-            )
-            
-            # Create new columns with the Winsorized values (values clipped at lower and upper bounds)
-            group[f'{column}_winsorized'] = group[column].clip(lower=lower_bound, upper=upper_bound)
+# Function to process a column and return a DataFrame with winsorized data
+def process_column_winsorization(df, column):
+ 
+    # Group by 'adm1', 'adm2', 'adm3', 'hf', 'year' for processing each group separately
+    grouped = df.groupby(['adm1', 'adm2', 'adm3', 'hf', 'year'])
+    results = []
+
+    # Process each group
+    for (adm1, adm2, adm3, hf, year), group in grouped:
+        # Detect outliers
+        lower_bound, upper_bound = detect_outliers_scatterplot(group, column)
         
-        # After processing all columns in this group, append the group to the list
-        processed_groups.append(group)
+        # Add new columns for outlier boundaries, category, and winsorized data
+        group[f'{column}_lower_bound'] = lower_bound
+        group[f'{column}_upper_bound'] = upper_bound
+        group[f'{column}_category'] = np.where(
+            (group[column] < lower_bound) | (group[column] > upper_bound), 'Outlier', 'Non-Outlier'
+        )
+        group[f'{column}_winsorized'] = winsorize_series(group[column], lower_bound, upper_bound)
+        
+        # Append the processed group to the results list
+        results.append(group)
+
+    # Concatenate all the processed groups
+    final_df = pd.concat(results)
     
-    # Concatenate the processed groups back into a single DataFrame
-    final_df = pd.concat(processed_groups)
+    # Define the columns to export
+    export_columns = [
+        'adm1', 'adm2', 'adm3', 'hf', 'year', 'month', column,
+        f'{column}_category', f'{column}_lower_bound', f'{column}_upper_bound',
+        f'{column}_winsorized'
+    ]
     
-    return final_df
+    # Filter to include only the existing columns in the DataFrame
+    export_columns = [col for col in export_columns if col in final_df.columns]
+    
+    return final_df[export_columns]
+
+# Main function to process multiple columns and merge the results
+def detect_outliers(df):
+    # List of columns to process
+    columns_to_process = ['allout', 'susp', 'test', 'conf', 'maltreat', 'pres', 'maladm', 'maldth']
+    processed_dfs = []
+
+    # Loop through each column and process it
+    for column in columns_to_process:
+        if column not in df.columns:
+            print(f"Skipping column {column} as it does not exist in the dataset.")
+            continue
+        if df[column].isnull().all():
+            print(f"Skipping column {column} as it contains only missing values.")
+            continue
+
+        print(f"Processing column: {column}")
+        processed_df = process_column_winsorization(df, column)
+        processed_dfs.append(processed_df)
+
+    # Merge the processed DataFrames
+    if processed_dfs:
+        merge_keys = ['adm1', 'adm2', 'adm3', 'hf', 'year', 'month']
+        final_combined_df = processed_dfs[0]
+        for df_to_merge in processed_dfs[1:]:
+            final_combined_df = final_combined_df.merge(df_to_merge, on=merge_keys, how='outer')
+        
+        return final_combined_df
+    else:
+        print("No valid columns were processed.")
+        return None
+
 
 
 
