@@ -91,37 +91,32 @@ def split(df, split_path):
     return df
 
 ### Outlier
-def detect_outliers_scatterplot(df, col):
-    """
-    Calculate lower and upper bounds for outlier detection using IQR method.
-    """
-    Q1 = df[col].quantile(0.25, skipna=True)
-    Q3 = df[col].quantile(0.75, skipna=True)
-    IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
-    return lower_bound, upper_bound
-
-def detect_outliers(df):
-    """
-    Detect outliers for all numeric columns in the dataframe.
-    Returns the original dataframe with additional columns marking outliers.
-    """
+def detect_outliers(df, group_cols=['adm1', 'adm2', 'adm3', 'hf', 'year']):
     # Get all numeric columns
     numeric_cols = df.select_dtypes(include=['number']).columns
     
-    # Create outlier flags for each numeric column
+    # Create outlier status columns
     for col in numeric_cols:
-        if df[col].notna().any():  # Skip columns with all NaN values
-            lower_bound, upper_bound = detect_outliers_scatterplot(df, col)
-            
-            # Create new column to flag outliers
-            outlier_col = f"{col}_is_outlier"
-            df[outlier_col] = ((df[col] < lower_bound) | (df[col] > upper_bound))
-            
-            # Optionally, store the bounds in the dataframe attributes
-            df.attrs[f"{col}_lower_bound"] = lower_bound
-            df.attrs[f"{col}_upper_bound"] = upper_bound
+        status_col = f"{col}_status"
+        df[status_col] = "non-outlier"  # Default all to non-outlier
+        
+        # Process each group
+        for name, group in df.groupby(group_cols):
+            # Skip columns with all NaN in this group
+            if group[col].notna().any():
+                # Calculate bounds
+                Q1 = group[col].quantile(0.25, skipna=True)
+                Q3 = group[col].quantile(0.75, skipna=True)
+                IQR = Q3 - Q1
+                lower = Q1 - 1.5 * IQR
+                upper = Q3 + 1.5 * IQR
+                
+                # Create group index for filtering
+                group_idx = group.index
+                
+                # Mark outliers in this group
+                outlier_mask = (df.loc[group_idx, col] < lower) | (df.loc[group_idx, col] > upper)
+                df.loc[group_idx[outlier_mask], status_col] = "outlier"
     
     return df
 
