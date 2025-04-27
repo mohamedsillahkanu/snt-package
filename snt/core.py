@@ -91,34 +91,55 @@ def split(df, split_path):
     return df
 
 ### Outlier
-def detect_outliers(df, group_cols=['adm1', 'adm2', 'adm3', 'hf', 'year']):
-    # Get all numeric columns
-    numeric_cols = df.select_dtypes(include=['number']).columns
-    
-    # Create outlier status columns
-    for col in numeric_cols:
-        status_col = f"{col}_status"
-        df[status_col] = "non-outlier"  # Default all to non-outlier
-        
-        # Process each group
-        for name, group in df.groupby(group_cols):
-            # Skip columns with all NaN in this group
-            if group[col].notna().any():
-                # Calculate bounds
-                Q1 = group[col].quantile(0.25)
-                Q3 = group[col].quantile(0.75)
-                IQR = Q3 - Q1
-                lower = Q1 - 1.5 * IQR
-                upper = Q3 + 1.5 * IQR
-                
-                # Create group index for filtering
-                group_idx = group.index
-                
-                # Mark outliers in this group
-                outlier_mask = (df.loc[group_idx, col] < lower) | (df.loc[group_idx, col] > upper)
-                df.loc[group_idx[outlier_mask], status_col] = "outlier"
-    
-    return df
+import pandas as pd
+import numpy as np
 
-# Example usage:
-# df = detect_outliers(df)
+# Function to detect outliers using Scatterplot with Q1 and Q3 lines
+def detect_outliers_scatterplot(df, col):
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    return lower_bound, upper_bound
+
+# Function to apply winsorization to a column
+def winsorize_series(series, lower_bound, upper_bound):
+    return series.clip(lower=lower_bound, upper=upper_bound)
+
+# Function to process and analyze the dataset for numeric columns using Winsorization
+def detect_outliers(df):
+    # Filter for numeric columns only
+    numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+    processed_dfs = []
+
+    for column in numeric_columns:
+        # Skip if the column contains only missing values
+        if df[column].isnull().all():
+            print(f"Skipping column {column} as it contains only missing values.")
+            continue
+
+        print(f"Processing numeric column: {column}")
+        # Apply the outlier detection and winsorization
+        lower_bound, upper_bound = detect_outliers_scatterplot(df, column)
+        df[f'{column}_lower_bound'] = lower_bound
+        df[f'{column}_upper_bound'] = upper_bound
+        df[f'{column}_category'] = np.where(
+            (df[column] < lower_bound) | (df[column] > upper_bound), 'Outlier', 'Non-Outlier'
+        )
+        df[f'{column}_winsorized'] = winsorize_series(df[column], lower_bound, upper_bound)
+
+        processed_dfs.append(df[[column, f'{column}_category', f'{column}_lower_bound', f'{column}_upper_bound', f'{column}_winsorized']])
+
+        print(f"Processed Data for {column}:")
+        print(df[[column, f'{column}_category', f'{column}_lower_bound', f'{column}_upper_bound', f'{column}_winsorized']].head())
+
+    # Combine the results for all numeric columns
+    if processed_dfs:
+        final_combined_df = pd.concat(processed_dfs, axis=1)
+        return final_combined_df
+    else:
+        print("No numeric columns found to process.")
+        return df  # Return the original DataFrame if no numeric columns were found
+
+
