@@ -112,9 +112,7 @@ def detect_outliers(df):
             (df[column] < lower_bound) | (df[column] > upper_bound), 'Outlier', 'Non-Outlier'
         )
         
-        # Create new columns with the Winsorized values (values clipped at lower and upper bounds)
-        df[f'{column}_winsorized'] = df[column].clip(lower=lower_bound, upper=upper_bound)
-    
     return df
+
 
 
