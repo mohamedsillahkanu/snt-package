@@ -183,14 +183,20 @@ def detect_outliers(df):
         print("No valid columns were processed.")
         return None
 
-def outlier_summary(df, category_columns):
+import pandas as pd
+from tabulate import tabulate
+
+def generate_summary_stats(df):
+    # Automatically detect columns ending with '_category'
+    category_columns = [col for col in df.columns if col.endswith('_category')]
+    
     summary_stats = {}
 
     for col in category_columns:
         total_outliers = (df[col] == 'Outlier').sum()
         total_non_outliers = (df[col] == 'Non-Outlier').sum()
         total = total_outliers + total_non_outliers
-        
+
         if total > 0:
             outlier_percentage = (total_outliers / total) * 100
             non_outlier_percentage = (total_non_outliers / total) * 100
@@ -205,9 +211,14 @@ def outlier_summary(df, category_columns):
             'Outlier Percentage': f"{outlier_percentage:.2f}%",
             'Non-Outlier Percentage': f"{non_outlier_percentage:.2f}%"
         }
-    
+
     summary_df = pd.DataFrame(summary_stats).T
+
+    # Print in a pretty table
+    print(tabulate(summary_df, headers='keys', tablefmt='pretty'))
+
     return summary_df
+
 
 
 
