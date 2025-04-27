@@ -105,8 +105,8 @@ def detect_outliers(df, group_cols=['adm1', 'adm2', 'adm3', 'hf', 'year']):
             # Skip columns with all NaN in this group
             if group[col].notna().any():
                 # Calculate bounds
-                Q1 = group[col].quantile(0.25, skipna=True)
-                Q3 = group[col].quantile(0.75, skipna=True)
+                Q1 = group[col].quantile(0.25)
+                Q3 = group[col].quantile(0.75)
                 IQR = Q3 - Q1
                 lower = Q1 - 1.5 * IQR
                 upper = Q3 + 1.5 * IQR
