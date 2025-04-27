@@ -90,8 +90,8 @@ def split(df, split_path):
 
     return df
 
-# Outlier
-# Step 2: Function to calculate lower and upper bounds (IQR method)
+### Outlier
+# Step 1: Function to calculate lower and upper bounds
 def detect_outliers_scatterplot(group_df, col):
     Q1 = group_df[col].quantile(0.25)
     Q3 = group_df[col].quantile(0.75)
@@ -100,7 +100,7 @@ def detect_outliers_scatterplot(group_df, col):
     upper_bound = Q3 + 1.5 * IQR
     return lower_bound, upper_bound
 
-# Step 3: Function to detect outliers per group for multiple columns
+# Step 2: Function to detect outliers per group
 def detect_outliers_per_group(group_df, numeric_cols):
     for col in numeric_cols:
         lower, upper = detect_outliers_scatterplot(group_df, col)
@@ -108,22 +108,17 @@ def detect_outliers_per_group(group_df, numeric_cols):
         group_df[outlier_col] = ~group_df[col].between(lower, upper)
     return group_df
 
-# Step 4: Main function to handle grouping and detection
-
+# Step 3: Main function to handle full process
 def detect_outliers(df):
-    # Select numeric columns
     numeric_cols = df.select_dtypes(include='number').columns.tolist()
     
-    # Exclude 'month' if it's present
     if 'month' in numeric_cols:
         numeric_cols.remove('month')
     
-    # Apply the outlier detection per group
     df = df.groupby(['adm1', 'adm2', 'adm3', 'hf', 'year'], group_keys=False).apply(
         detect_outliers_per_group, numeric_cols=numeric_cols
     )
     
-    # Reset index to make DataFrame clean
     df = df.reset_index(drop=True)
     
     return df
