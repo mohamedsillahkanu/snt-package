@@ -91,28 +91,49 @@ def split(df, split_path):
     return df
 
 ### Outlier
-# Function to detect outliers using IQR method for all numeric columns in the dataframe
+import pandas as pd
+import numpy as np
+
+# Function to detect outliers using IQR method for all numeric columns in the dataframe within groups
 def detect_outliers(df):
     # Filter for numeric columns only
     numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
     
-    # Loop through each numeric column
-    for column in numeric_columns:
-        # Calculate Q1, Q3, and IQR for the column
-        Q1 = df[column].quantile(0.25)
-        Q3 = df[column].quantile(0.75)
-        IQR = Q3 - Q1
+    # Group the data by 'hf_uid' and 'year'
+    grouped = df.groupby(['adm1','adm2','adm3','hf','year'])
+
+    # Initialize an empty list to store processed groups
+    processed_groups = []
+
+    # Loop through each group
+    for (hf_uid, year), group in grouped:
+        for column in numeric_columns:
+            # Calculate Q1, Q3, and IQR for the column within each group
+            Q1 = group[column].quantile(0.25)
+            Q3 = group[column].quantile(0.75)
+            IQR = Q3 - Q1
+            
+            # Calculate the lower and upper bounds for outliers
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            # Create a new column to classify values as Outlier or Non-Outlier
+            group[f'{column}_outlier_category'] = np.where(
+                (group[column] < lower_bound) | (group[column] > upper_bound), 'Outlier', 'Non-Outlier'
+            )
+            
+            # Create new columns with the Winsorized values (values clipped at lower and upper bounds)
+            group[f'{column}_winsorized'] = group[column].clip(lower=lower_bound, upper=upper_bound)
         
-        # Calculate the lower and upper bounds for outliers
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-        
-        # Create a new column to classify values as Outlier or Non-Outlier
-        df[f'{column}_outlier_category'] = np.where(
-            (df[column] < lower_bound) | (df[column] > upper_bound), 'Outlier', 'Non-Outlier'
-        )
-        
-    return df
+        # After processing all columns in this group, append the group to the list
+        processed_groups.append(group)
+    
+    # Concatenate the processed groups back into a single DataFrame
+    final_df = pd.concat(processed_groups)
+    
+    return final_df
+
+
 
 
 
