@@ -186,7 +186,7 @@ def detect_outliers(df):
 import pandas as pd
 from tabulate import tabulate
 
-def generate_summary_stats(df):
+def outlier_summary(df):
     # Automatically detect columns ending with '_category'
     category_columns = [col for col in df.columns if col.endswith('_category')]
     
