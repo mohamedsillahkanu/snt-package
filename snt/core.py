@@ -91,69 +91,43 @@ def split(df, split_path):
     return df
 
 # Outlier
-import numpy as np
-def detect_outliers_scatterplot(df, col):
-    Q1 = df[col].quantile(0.25)
-    Q3 = df[col].quantile(0.75)
+# Step 2: Function to calculate lower and upper bounds (IQR method)
+def detect_outliers_scatterplot(group_df, col):
+    Q1 = group_df[col].quantile(0.25)
+    Q3 = group_df[col].quantile(0.75)
     IQR = Q3 - Q1
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
     return lower_bound, upper_bound
 
-def winsorize_series(series, lower_bound, upper_bound):
-    return series.clip(lower=lower_bound, upper=upper_bound)
+# Step 3: Function to detect outliers per group for multiple columns
+def detect_outliers_per_group(group_df, numeric_cols):
+    for col in numeric_cols:
+        lower, upper = detect_outliers_scatterplot(group_df, col)
+        outlier_col = f'{col}_is_outlier'
+        group_df[outlier_col] = ~group_df[col].between(lower, upper)
+    return group_df
 
-def outliers(df, grouped_columns_path):
-    # Read the group columns from the Excel file
-    grouped_columns_df = pd.read_excel(grouped_columns_path)
-    grouped_columns_df.columns = grouped_columns_df.columns.str.strip()
-    group_columns = list(grouped_columns_df.columns)
+# Step 4: Main function to handle grouping and detection
+def detect_outliers(df):
+    # Select numeric columns
+    numeric_cols = df.select_dtypes(include='number').columns.tolist()
+    
+    # Exclude 'month' if it's present
+    if 'month' in numeric_cols:
+        numeric_cols.remove('month')
+    
+    # Apply the outlier detection per group
+    df = df.groupby(['adm1', 'adm2', 'adm3', 'hf', 'year'], group_keys=False).apply(
+        detect_outliers_per_group, numeric_cols=numeric_cols
+    )
+    return df
 
-    # Double-check 'year' is part of the group columns list
-    if 'year' not in group_columns:
-        raise ValueError("'year' must be part of the group columns. Columns available: " + ", ".join(group_columns))
+# Step 5: Apply the function to the dataframe
+df = detect_outliers(df)
 
-    # Confirm 'year' is inside df
-    if 'year' not in df.columns:
-        raise ValueError("'year' must exist in the dataset columns. Your dataset columns are: " + ", ".join(df.columns))
+# (Optional) Reset index if needed
+df = df.reset_index(drop=True)
 
-    # Group the dataframe using your provided columns
-    grouped = df.groupby(group_columns)
-    results = []
-
-    # Auto-detect numeric columns
-    numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
-
-    for group_keys, group in grouped:
-        group = group.reset_index(drop=True)
-
-        for numeric_column in numeric_columns:
-            lower_bound, upper_bound = detect_outliers_scatterplot(group, numeric_column)
-            group[f'{numeric_column}_lower_bound'] = lower_bound
-            group[f'{numeric_column}_upper_bound'] = upper_bound
-            group[f'{numeric_column}_category'] = np.where(
-                (group[numeric_column] < lower_bound) | (group[numeric_column] > upper_bound), 'Outlier', 'Non-Outlier'
-            )
-            group[f'{numeric_column}_winsorized'] = winsorize_series(group[numeric_column], lower_bound, upper_bound)
-        
-            results.append(group)
-
-
-
-    final_df = pd.concat(results)
-
-    # Export useful columns
-    export_columns = group_columns.copy()
-    for numeric_column in numeric_columns:
-        export_columns.extend([
-            numeric_column,
-            f'{numeric_column}_category',
-            f'{numeric_column}_lower_bound',
-            f'{numeric_column}_upper_bound',
-            f'{numeric_column}_winsorized'
-        ])
-
-    # Only keep columns that exist
-    export_columns = [col for col in export_columns if col in final_df.columns]
-
-    return final_df[export_columns]
+# Step 6: (Optional) Save output if you want
+# df.to_excel('output_with_outliers.xlsx', index=False)
