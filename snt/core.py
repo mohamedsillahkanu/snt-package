@@ -93,42 +93,37 @@ def split(df, split_path):
 ### Outlier
 import pandas as pd
 
-# Step 1: Function to calculate lower and upper bounds (IQR)
-def detect_outliers_scatterplot(group_df, col):
-    Q1 = group_df[col].quantile(0.25)
-    Q3 = group_df[col].quantile(0.75)
-    IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
-    return lower_bound, upper_bound
+def detect_outliers(df, group_cols=['adm1', 'adm2', 'adm3', 'hf', 'year']):
 
-# Step 2: Function to detect outliers per group with the new outlier logic
-def detect_outliers_per_group(group_df, numeric_cols):
-    for col in numeric_cols:
-        lower, upper = detect_outliers_scatterplot(group_df, col)
+    def detect_outliers_scatterplot(df, col):
+        Q1 = df[col].quantile(0.25, skipna = True)
+        Q3 = df[col].quantile(0.75, skipna = True)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        return lower_bound, upper_bound
+    
+    # Get all numeric columns (including month-related ones)
+    cols_to_check = df.select_dtypes(include=['number']).columns
+    
+    # Group by specified columns
+    grouped = df.groupby(group_cols)
+    
+    # Create empty dictionary to store outliers
+    outliers_dict = {}
+    
+    # Loop through each group and each column to detect outliers
+    for name, group in grouped:
+        group_outliers = {}
+        for col in cols_to_check:
+            if col in group.columns and not group[col].isna().all():
+                lower, upper = detect_outliers_scatterplot(group, col)
+                # Find outliers in the group for this column
+                col_outliers = group[(group[col] < lower) | (group[col] > upper)]
+                if not col_outliers.empty:
+                    group_outliers[col] = col_outliers
         
-        # Check if value is an outlier based on new condition
-        outlier_col = f'{col}_is_outlier'
-        group_df[outlier_col] = (group_df[col] < lower) | (group_df[col] > upper)
-        
-    return group_df
-
-# Step 3: Main function to handle full process
-def detect_outliers(df):
-    # Select numeric columns
-    numeric_cols = df.select_dtypes(include='number').columns.tolist()
+        if group_outliers:
+            outliers_dict[name] = group_outliers
     
-    # Exclude 'month' if it's present
-    if 'month' in numeric_cols:
-        numeric_cols.remove('month')
-    
-    # Apply outlier detection for each group
-    df = df.groupby(['adm1', 'adm2', 'adm3', 'hf', 'year'], group_keys=False).apply(
-        detect_outliers_per_group, numeric_cols=numeric_cols
-    )
-    
-    # Reset index to make DataFrame clean
-    df = df.reset_index(drop=True)
-    
-    return df
-
+    return outliers_dict
