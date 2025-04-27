@@ -91,6 +91,8 @@ def split(df, split_path):
     return df
 
 ### Outlier
+import pandas as pd
+
 # Step 1: Function to calculate lower and upper bounds (IQR)
 def detect_outliers_scatterplot(group_df, col):
     Q1 = group_df[col].quantile(0.25)
@@ -129,3 +131,4 @@ def detect_outliers(df):
     df = df.reset_index(drop=True)
     
     return df
+
