@@ -109,6 +109,7 @@ def detect_outliers_per_group(group_df, numeric_cols):
     return group_df
 
 # Step 4: Main function to handle grouping and detection
+
 def detect_outliers(df):
     # Select numeric columns
     numeric_cols = df.select_dtypes(include='number').columns.tolist()
@@ -121,13 +122,9 @@ def detect_outliers(df):
     df = df.groupby(['adm1', 'adm2', 'adm3', 'hf', 'year'], group_keys=False).apply(
         detect_outliers_per_group, numeric_cols=numeric_cols
     )
+    
+    # Reset index to make DataFrame clean
+    df = df.reset_index(drop=True)
+    
     return df
 
-# Step 5: Apply the function to the dataframe
-df = detect_outliers(df)
-
-# (Optional) Reset index if needed
-df = df.reset_index(drop=True)
-
-# Step 6: (Optional) Save output if you want
-# df.to_excel('output_with_outliers.xlsx', index=False)
