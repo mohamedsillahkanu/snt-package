@@ -183,6 +183,32 @@ def detect_outliers(df):
         print("No valid columns were processed.")
         return None
 
+def outlier_summary(df, category_columns):
+    summary_stats = {}
+
+    for col in category_columns:
+        total_outliers = (df[col] == 'Outlier').sum()
+        total_non_outliers = (df[col] == 'Non-Outlier').sum()
+        total = total_outliers + total_non_outliers
+        
+        if total > 0:
+            outlier_percentage = (total_outliers / total) * 100
+            non_outlier_percentage = (total_non_outliers / total) * 100
+        else:
+            outlier_percentage = 0
+            non_outlier_percentage = 0
+
+        summary_stats[col] = {
+            'Total Outliers': total_outliers,
+            'Total Non-Outliers': total_non_outliers,
+            'Total Records': total,
+            'Outlier Percentage': f"{outlier_percentage:.2f}%",
+            'Non-Outlier Percentage': f"{non_outlier_percentage:.2f}%"
+        }
+    
+    summary_df = pd.DataFrame(summary_stats).T
+    return summary_df
+
 
 
 
