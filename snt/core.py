@@ -91,39 +91,39 @@ def split(df, split_path):
     return df
 
 ### Outlier
-import pandas as pd
+def detect_outliers_scatterplot(df, col):
+    """
+    Calculate lower and upper bounds for outlier detection using IQR method.
+    """
+    Q1 = df[col].quantile(0.25, skipna=True)
+    Q3 = df[col].quantile(0.75, skipna=True)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    return lower_bound, upper_bound
 
-def detect_outliers(df, group_cols=['adm1', 'adm2', 'adm3', 'hf', 'year']):
+def detect_outliers(df):
+    """
+    Detect outliers for all numeric columns in the dataframe.
+    Returns the original dataframe with additional columns marking outliers.
+    """
+    # Get all numeric columns
+    numeric_cols = df.select_dtypes(include=['number']).columns
+    
+    # Create outlier flags for each numeric column
+    for col in numeric_cols:
+        if df[col].notna().any():  # Skip columns with all NaN values
+            lower_bound, upper_bound = detect_outliers_scatterplot(df, col)
+            
+            # Create new column to flag outliers
+            outlier_col = f"{col}_is_outlier"
+            df[outlier_col] = ((df[col] < lower_bound) | (df[col] > upper_bound))
+            
+            # Optionally, store the bounds in the dataframe attributes
+            df.attrs[f"{col}_lower_bound"] = lower_bound
+            df.attrs[f"{col}_upper_bound"] = upper_bound
+    
+    return df
 
-    def detect_outliers_scatterplot(df, col):
-        Q1 = df[col].quantile(0.25, skipna = True)
-        Q3 = df[col].quantile(0.75, skipna = True)
-        IQR = Q3 - Q1
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-        return lower_bound, upper_bound
-    
-    # Get all numeric columns (including month-related ones)
-    cols_to_check = df.select_dtypes(include=['number']).columns
-    
-    # Group by specified columns
-    grouped = df.groupby(group_cols)
-    
-    # Create empty dictionary to store outliers
-    outliers_dict = {}
-    
-    # Loop through each group and each column to detect outliers
-    for name, group in grouped:
-        group_outliers = {}
-        for col in cols_to_check:
-            if col in group.columns and not group[col].isna().all():
-                lower, upper = detect_outliers_scatterplot(group, col)
-                # Find outliers in the group for this column
-                col_outliers = group[(group[col] < lower) | (group[col] > upper)]
-                if not col_outliers.empty:
-                    group_outliers[col] = col_outliers
-        
-        if group_outliers:
-            outliers_dict[name] = group_outliers
-    
-    return outliers_dict
+# Example usage:
+# df = detect_outliers(df)
