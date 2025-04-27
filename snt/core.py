@@ -126,16 +126,16 @@ def outliers(df, grouped_columns_path):
 
     for numeric_column in numeric_columns:
         for group_keys, group in grouped:
-        group = group.reset_index(drop=True)  # <- Add this line!
-        
-        lower_bound, upper_bound = detect_outliers_scatterplot(group, numeric_column)
-        group[f'{numeric_column}_lower_bound'] = lower_bound
-        group[f'{numeric_column}_upper_bound'] = upper_bound
-        group[f'{numeric_column}_category'] = np.where(
-            (group[numeric_column] < lower_bound) | (group[numeric_column] > upper_bound), 'Outlier', 'Non-Outlier'
-        )
-        group[f'{numeric_column}_winsorized'] = winsorize_series(group[numeric_column], lower_bound, upper_bound)
-        results.append(group)
+            group = group.reset_index(drop=True)  # <- Add this line!
+            
+            lower_bound, upper_bound = detect_outliers_scatterplot(group, numeric_column)
+            group[f'{numeric_column}_lower_bound'] = lower_bound
+            group[f'{numeric_column}_upper_bound'] = upper_bound
+            group[f'{numeric_column}_category'] = np.where(
+                (group[numeric_column] < lower_bound) | (group[numeric_column] > upper_bound), 'Outlier', 'Non-Outlier'
+            )
+            group[f'{numeric_column}_winsorized'] = winsorize_series(group[numeric_column], lower_bound, upper_bound)
+            results.append(group)
 
 
     final_df = pd.concat(results)
