@@ -124,10 +124,10 @@ def outliers(df, grouped_columns_path):
     # Auto-detect numeric columns
     numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
 
-    for numeric_column in numeric_columns:
-        for group_keys, group in grouped:
-            group = group.reset_index(drop=True)  # <- Add this line!
-            
+    for group_keys, group in grouped:
+        group = group.reset_index(drop=True)
+
+        for numeric_column in numeric_columns:
             lower_bound, upper_bound = detect_outliers_scatterplot(group, numeric_column)
             group[f'{numeric_column}_lower_bound'] = lower_bound
             group[f'{numeric_column}_upper_bound'] = upper_bound
@@ -135,7 +135,9 @@ def outliers(df, grouped_columns_path):
                 (group[numeric_column] < lower_bound) | (group[numeric_column] > upper_bound), 'Outlier', 'Non-Outlier'
             )
             group[f'{numeric_column}_winsorized'] = winsorize_series(group[numeric_column], lower_bound, upper_bound)
+        
             results.append(group)
+
 
 
     final_df = pd.concat(results)
