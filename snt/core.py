@@ -114,43 +114,36 @@ def winsorize_series(series, lower_bound, upper_bound):
     # Clip the values that are outside the bounds
     return series.clip(lower=lower_bound, upper=upper_bound)
 
-# Function to process a column and return a DataFrame with winsorized data
 def process_column_winsorization(df, column):
- 
-    # Group by 'adm1', 'adm2', 'adm3', 'hf', 'year' for processing each group separately
     grouped = df.groupby(['adm1', 'adm2', 'adm3', 'hf', 'year'])
     results = []
 
-    # Process each group
     for (adm1, adm2, adm3, hf, year), group in grouped:
-        # Detect outliers
+        group = group.copy()  # Important to allow adding columns
         lower_bound, upper_bound = detect_outliers_scatterplot(group, column)
-        
-        # Add new columns for outlier boundaries, category, and winsorized data
+
         group[f'{column}_lower_bound'] = lower_bound
         group[f'{column}_upper_bound'] = upper_bound
         group[f'{column}_category'] = np.where(
-            (group[column] < lower_bound) | (group[column] > upper_bound), 'Outlier', 'Non-Outlier'
+            (group[column] < lower_bound) | (group[column] > upper_bound),
+            'Outlier',
+            'Non-Outlier'
         )
         group[f'{column}_winsorized'] = winsorize_series(group[column], lower_bound, upper_bound)
-        
-        # Append the processed group to the results list
+
         results.append(group)
 
-    # Concatenate all the processed groups
     final_df = pd.concat(results)
-    
-    # Define the columns to export
+
     export_columns = [
         'adm1', 'adm2', 'adm3', 'hf', 'year', 'month', column,
         f'{column}_category', f'{column}_lower_bound', f'{column}_upper_bound',
         f'{column}_winsorized'
     ]
-    
-    # Filter to include only the existing columns in the DataFrame
     export_columns = [col for col in export_columns if col in final_df.columns]
-    
+
     return final_df[export_columns]
+
 
 # Main function to process multiple columns and merge the results
 def detect_outliers(df):
