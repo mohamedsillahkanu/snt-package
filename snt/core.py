@@ -261,7 +261,7 @@ def process_column_winsorization(df, column):
         group[f'{column}_category'] = np.where(
             (group[column] < lower_bound) | (group[column] > upper_bound), 'Outlier', 'Non-Outlier'
         )
-        group[f'{column}_winsorized'] = winsorize_series(group[column], lower_bound, upper_bound)
+
         
         # Append the processed group to the results list
         results.append(group)
