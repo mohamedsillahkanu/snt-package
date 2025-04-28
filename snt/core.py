@@ -90,7 +90,7 @@ def split(df, split_path):
 
     return df
 
-### Outlier
+### Outlier detection and correctio with winsorized method
 import pandas as pd
 import numpy as np
 
@@ -218,6 +218,137 @@ def outlier_summary(df):
     print(tabulate(summary_df, headers='keys', tablefmt='pretty'))
 
     return summary_df
+
+### Outlier detection after correction with winsorized method
+import pandas as pd
+import numpy as np
+
+# Function to detect outliers using Scatterplot with Q1 and Q3 lines
+def detect_outliers_scatterplot(df, col):
+    
+    # Calculate Q1 and Q3
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    
+    # Calculate the lower and upper bounds for outliers
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    
+    return lower_bound, upper_bound
+
+# Function to apply winsorization to a column
+def winsorize_series(series, lower_bound, upper_bound):
+  
+    # Clip the values that are outside the bounds
+    return series.clip(lower=lower_bound, upper=upper_bound)
+
+# Function to process a column and return a DataFrame with winsorized data
+def process_column_winsorization(df, column):
+ 
+    # Group by 'adm1', 'adm2', 'adm3', 'hf', 'year' for processing each group separately
+    grouped = df.groupby(['adm1', 'adm2', 'adm3', 'hf', 'year'])
+    results = []
+
+    # Process each group
+    for (adm1, adm2, adm3, hf, year), group in grouped:
+        # Detect outliers
+        lower_bound, upper_bound = detect_outliers_scatterplot(group, column)
+        
+        # Add new columns for outlier boundaries, category, and winsorized data
+        group[f'{column}_lower_bound'] = lower_bound
+        group[f'{column}_upper_bound'] = upper_bound
+        group[f'{column}_category'] = np.where(
+            (group[column] < lower_bound) | (group[column] > upper_bound), 'Outlier', 'Non-Outlier'
+        )
+        group[f'{column}_winsorized'] = winsorize_series(group[column], lower_bound, upper_bound)
+        
+        # Append the processed group to the results list
+        results.append(group)
+
+    # Concatenate all the processed groups
+    final_df = pd.concat(results)
+    
+    # Define the columns to export
+    export_columns = [
+        'adm1', 'adm2', 'adm3', 'hf', 'year', 'month', column,
+        f'{column}_category', f'{column}_lower_bound', f'{column}_upper_bound',
+       
+    ]
+    
+    # Filter to include only the existing columns in the DataFrame
+    export_columns = [col for col in export_columns if col in final_df.columns]
+    
+    return final_df[export_columns]
+
+# Main function to process multiple columns and merge the results
+def detect_outliers_after_correction(df):
+    # List of columns to process
+    columns_to_process = ['allout_winsorised', 'susp_winsorised', 'test_winsorised', 'conf_winsorised', 'maltreat_winsorised', 'pres_winsorised', 'maladm_winsorised', 'maldth_winsorised']
+    processed_dfs = []
+
+    # Loop through each column and process it
+    for column in columns_to_process:
+        if column not in df.columns:
+            print(f"Skipping column {column} as it does not exist in the dataset.")
+            continue
+        if df[column].isnull().all():
+            print(f"Skipping column {column} as it contains only missing values.")
+            continue
+
+        print(f"Processing column: {column}")
+        processed_df = process_column_winsorization(df, column)
+        processed_dfs.append(processed_df)
+
+    # Merge the processed DataFrames
+    if processed_dfs:
+        merge_keys = ['adm1', 'adm2', 'adm3', 'hf', 'year', 'month']
+        final_combined_df = processed_dfs[0]
+        for df_to_merge in processed_dfs[1:]:
+            final_combined_df = final_combined_df.merge(df_to_merge, on=merge_keys, how='outer')
+        
+        return final_combined_df
+    else:
+        print("No valid columns were processed.")
+        return None
+
+import pandas as pd
+from tabulate import tabulate
+
+def outlier_summary_after_correction(df):
+    # Automatically detect columns ending with '_category'
+    category_columns = [col for col in df.columns if col.endswith('_category')]
+    
+    summary_stats = {}
+
+    for col in category_columns:
+        total_outliers = (df[col] == 'Outlier').sum()
+        total_non_outliers = (df[col] == 'Non-Outlier').sum()
+        total = total_outliers + total_non_outliers
+
+        if total > 0:
+            outlier_percentage = (total_outliers / total) * 100
+            non_outlier_percentage = (total_non_outliers / total) * 100
+        else:
+            outlier_percentage = 0
+            non_outlier_percentage = 0
+
+        summary_stats[col] = {
+            'Total Outliers': total_outliers,
+            'Total Non-Outliers': total_non_outliers,
+            'Total Records': total,
+            'Outlier Percentage': f"{outlier_percentage:.2f}%",
+            'Non-Outlier Percentage': f"{non_outlier_percentage:.2f}%"
+        }
+
+    summary_df = pd.DataFrame(summary_stats).T
+
+    # Print in a pretty table
+    print(tabulate(summary_df, headers='keys', tablefmt='pretty'))
+
+    return summary_df
+
+
 
 
 
