@@ -284,7 +284,7 @@ def process_column_winsorization(df, column):
 # Main function to process multiple columns and merge the results
 def detect_outliers_after_correction(df):
     # List of columns to process
-    columns_to_process = ['allout_winsorised', 'susp_winsorised', 'test_winsorised', 'conf_winsorised', 'maltreat_winsorised', 'pres_winsorised', 'maladm_winsorised', 'maldth_winsorised']
+    columns_to_process = ['allout_winsorized', 'susp_winsorized', 'test_winsorized', 'conf_winsorized', 'maltreat_winsorized', 'pres_winsorized', 'maladm_winsorized', 'maldth_winsorized']
     processed_dfs = []
 
     # Loop through each column and process it
