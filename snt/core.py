@@ -96,30 +96,24 @@ import numpy as np
 
 # Function to detect outliers using Scatterplot with Q1 and Q3 lines
 def detect_outliers_scatterplot(df, col):
-    
-    # Calculate Q1 and Q3
     Q1 = df[col].quantile(0.25)
     Q3 = df[col].quantile(0.75)
     IQR = Q3 - Q1
-    
-    # Calculate the lower and upper bounds for outliers
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
-    
     return lower_bound, upper_bound
 
 # Function to apply winsorization to a column
 def winsorize_series(series, lower_bound, upper_bound):
-  
-    # Clip the values that are outside the bounds
     return series.clip(lower=lower_bound, upper=upper_bound)
 
+# Function to process a single column (grouped by adm1, adm2, adm3, hf, year)
 def process_column_winsorization(df, column):
     grouped = df.groupby(['adm1', 'adm2', 'adm3', 'hf', 'year'])
     results = []
 
     for (adm1, adm2, adm3, hf, year), group in grouped:
-        group = group.copy()  # Important to allow adding columns
+        group = group.copy()
         lower_bound, upper_bound = detect_outliers_scatterplot(group, column)
 
         group[f'{column}_lower_bound'] = lower_bound
@@ -144,36 +138,32 @@ def process_column_winsorization(df, column):
 
     return final_df[export_columns]
 
-
 # Main function to process multiple columns and merge the results
 def detect_outliers(df):
-    # List of columns to process
     columns_to_process = ['allout', 'susp', 'test', 'conf', 'maltreat', 'pres', 'maladm', 'maldth']
     processed_dfs = []
 
-    # Loop through each column and process it
     for column in columns_to_process:
         if column not in df.columns:
-            print(f"Skipping column {column} as it does not exist in the dataset.")
             continue
         if df[column].isnull().all():
-            print(f"Skipping column {column} as it contains only missing values.")
             continue
 
-        print(f"Processing column: {column}")
         processed_df = process_column_winsorization(df, column)
         processed_dfs.append(processed_df)
 
-    # Merge the processed DataFrames
     if processed_dfs:
         merge_keys = ['adm1', 'adm2', 'adm3', 'hf', 'year', 'month']
         final_combined_df = processed_dfs[0]
+
         for df_to_merge in processed_dfs[1:]:
-            final_combined_df = final_combined_df.merge(df_to_merge, on=merge_keys, how='outer')
-        
+            final_combined_df = final_combined_df.merge(
+                df_to_merge, on=merge_keys, how='outer', suffixes=('', '_dup')
+            )
+            final_combined_df = final_combined_df[[col for col in final_combined_df.columns if not col.endswith('_dup')]]
+
         return final_combined_df
     else:
-        print("No valid columns were processed.")
         return None
 
 import pandas as pd
