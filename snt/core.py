@@ -424,7 +424,7 @@ def epi_stratification(
     df_merge = reduce(lambda left, right: pd.merge(left, right, on=['adm1', 'adm2', 'adm3'], how='outer'), dfs)
 
     # Merge all
-    df1 = df_merge.merge(confirmed_data, on=['adm1', 'adm2', 'adm3'], how='left')
+    df1 = df_merge.merge(confirmed_data, on=['adm1', 'adm2', 'adm3'], how='left', validate='1:1')
     df2 = df1.merge(population_data, on='adm3', how='left')
     data = shapefile_data.merge(df2, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left')
 
@@ -498,12 +498,12 @@ def epi_plots(
     os.makedirs(output_folder, exist_ok=True)
 
     # Read data
-    df1 = pd.read_excel(data_path1)
-    df2 = pd.read_excel(data_path2)
-    shapefile = gpd.read_file(shapefile_path)
+    d1 = pd.read_excel(data_path1) # epi_data
+    df2 = pd.read_excel(data_path2) # Chiefdom_data
+    shapefile = gpd.read_file(shapefile_path) #Shapefile
 
     # Merge data
-    merged = df1.merge(df2, on='adm3', how='left', validate='1:1')
+    merged = df1.merge(df2, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
     gdf = shapefile.merge(merged, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
 
     # Build 'date' column if missing
