@@ -11,7 +11,8 @@ setup(
         'numpy>=1.18.0',       # For numerical operations (e.g., pmax-like functionality)
         'xlrd>=2.0.0',         # If reading older .xls files
         'pyreadstat>=1.1.4',   # Optional: for reading Stata/SAS/SPSS if needed later
-        'tabulate>=0.8.9' 
+        'tabulate>=0.8.9',
+        'geopandas'
     ],
     description='SNT Toolbox for data processing',
     author='Mohamed Sillah Kanu',
