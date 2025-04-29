@@ -476,7 +476,7 @@ from matplotlib.patches import Patch
 import numpy as np
 
 def merge_data_with_shapefile(df1, df2, shapefile):
-    merged_df = df1.merge(df2, on= on=['FIRST_DNAM', 'FIRST_CHIE'], how='left, validate='1:1')
+    merged_df = df1.merge(df2, on= on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
     gdf = shapefile.merge(merged_df, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
     return gdf
 
