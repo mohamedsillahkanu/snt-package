@@ -498,7 +498,7 @@ def epi_plots(
     os.makedirs(output_folder, exist_ok=True)
 
     # Read data
-    d1 = pd.read_excel(data_path1) # epi_data
+    df1 = pd.read_excel(data_path1) # epi_data
     df2 = pd.read_excel(data_path2) # Chiefdom_data
     shapefile = gpd.read_file(shapefile_path) #Shapefile
 
