@@ -471,13 +471,11 @@ from matplotlib.colors import BoundaryNorm
 from matplotlib.patches import Patch
 import numpy as np
 
-def merge_data_with_shapefile(df1, df2, shapefile):
-    merged_df = df1.merge(df2, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
-    gdf = shapefile.merge(merged_df, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
+def merge_data_with_shapefile(df1, shapefile):
+    gdf = shapefile.merge(df1, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
     return gdf
 
 def individual_plots(epi_data_path,
-                     chiefdom_data_path,
                      shapefile_path,
                      prefixes=['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_', 'TPR_'],
                      colormap='RdYlBu_r',
@@ -492,12 +490,11 @@ def individual_plots(epi_data_path,
 
     # Load input data
     df1 = pd.read_excel(epi_data_path)
-    df2 = pd.read_excel(chiefdom_data_path)
     shapefile = gpd.read_file(shapefile_path)
     os.makedirs(output_root, exist_ok=True)
 
     # Merge data
-    gdf = merge_data_with_shapefile(df1, df2, shapefile)
+    gdf = merge_data_with_shapefile(df1, shapefile)
 
     # Detect valid columns
     pattern = re.compile(r'_(\d{4})$')
@@ -566,7 +563,7 @@ def individual_plots(epi_data_path,
         plt.close()
 
 
-
+# Subplots
 import os
 import re
 import pandas as pd
@@ -576,15 +573,14 @@ from matplotlib.colors import BoundaryNorm
 from matplotlib.patches import Patch
 import numpy as np
 
-def subplots(epi_data_path, chiefdom_data_path, shapefile_path):
+def subplots(epi_data_path, shapefile_path):
     prefixes = ['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_', 'TPR_']
     os.makedirs("epi_maps", exist_ok=True)
 
     df1 = pd.read_excel(epi_data_path)
-    df2 = pd.read_excel(chiefdom_data_path)
     gdf_shape = gpd.read_file(shapefile_path)
-    merged_df = df1.merge(df2, on="adm3", how="left")
-    gdf = gdf_shape.merge(merged_df, on=["FIRST_DNAM", "FIRST_CHIE"], how="left")
+    
+    gdf = gdf_shape.merge(df1, on=["FIRST_DNAM", "FIRST_CHIE"], how="left", validate="1:1")
 
     bins = [0, 50, 100, 250, 450, 700, 1000, float("inf")]
     labels = ['<50', '50-100', '100-250', '250-450', '450-700', '700-1000', '>1000']
