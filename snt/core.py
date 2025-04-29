@@ -343,7 +343,6 @@ import os
 def epi_stratification(
     routine_data_path,
     population_data_path,
-    shapefile_path,
     output_folder='epi_output',
     output_filename='adjusted_incidence_with_mean_median.xlsx'
 ):
@@ -354,7 +353,6 @@ def epi_stratification(
     # Load input data
     routine_data = pd.read_excel(routine_data_path)
     population_data = pd.read_excel(population_data_path)
-    shapefile_data = gpd.read_file(shapefile_path)
     df = routine_data.copy()
 
     # Preprocess dates
@@ -425,9 +423,8 @@ def epi_stratification(
 
     # Merge all
     df1 = df_merge.merge(confirmed_data, on=['adm1', 'adm2', 'adm3'], how='left', validate='1:1')
-    df2 = df1.merge(population_data, on='adm3', how='left')
-    data = shapefile_data.merge(df2, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left')
-
+    data = df1.merge(population_data, on='adm3', how='left', validate='1:1')
+  
     # Compute metrics
     for year in years:
         conf_col = f"conf_{year}"
