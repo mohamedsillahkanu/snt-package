@@ -461,7 +461,7 @@ def epi_stratification(
 
     # Save
     data.to_excel(output_file, index=False)
-    print(f"Data has been successfully saved to {output_file}")
+    print(f"Data has been successfully saved to {output_folder}")
     return data
 
 
