@@ -465,6 +465,145 @@ def epi_stratification(
     return data
 
 
+# Epi plots
+
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from matplotlib.colors import BoundaryNorm
+from matplotlib.patches import Patch
+import numpy as np
+import os
+
+def epi_plots(
+    data_path1,
+    data_path2,
+    shapefile_path,
+    colormap='RdYlBu_r',
+    edge_color='gray',
+    bins=[0, 50, 100, 250, 450, 700, 1000, float('inf')],
+    bin_labels=['<50', '50-100', '100-250', '250-450', '450-700', '700-1000', '>1000'],
+    output_folder='epi_maps'
+):
+    """
+    Automatically detects and plots any columns ending with _{year} based on dynamic date range in the data.
+
+    Args:
+        data_path1 (str): Path to first data Excel file.
+        data_path2 (str): Path to second data Excel file.
+        shapefile_path (str): Path to shapefile.
+    """
+
+    # Create output directory if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Read data
+    df1 = pd.read_excel(data_path1)
+    df2 = pd.read_excel(data_path2)
+    shapefile = gpd.read_file(shapefile_path)
+
+    # Merge data
+    merged = df1.merge(df2, on='adm3', how='left', validate='1:1')
+    gdf = shapefile.merge(merged, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
+
+    # Build 'date' column if missing
+    if 'date' not in df1.columns:
+        if 'year' in df1.columns and 'month' in df1.columns:
+            df1['date'] = pd.to_datetime(df1['year'].astype(str) + '-' + df1['month'].astype(str).str.zfill(2), format='%Y-%m')
+        else:
+            raise ValueError("The dataframe must have 'date' or ['year' and 'month'] columns to calculate years dynamically.")
+
+    # Dynamic years detection
+    start = df1['date'].min().year
+    end = df1['date'].max().year
+    years = range(start, end + 1)
+    years = [str(y) for y in years]
+
+    print(f"Dynamically detected years: {years}")
+
+    # Setup colormap and normalization
+    cmap = plt.cm.get_cmap(colormap, len(bins) - 1)
+    norm = BoundaryNorm(bins, ncolors=cmap.N)
+
+    # Detect columns ending with _year
+    detected_columns = []
+    for col in gdf.columns:
+        if any(col.endswith(f"_{y}") for y in years):
+            detected_columns.append(col)
+
+    if not detected_columns:
+        print("No matching columns found. Please check your data.")
+        return
+
+    print(f"Detected columns to plot: {detected_columns}")
+
+    # Plot each detected column separately
+    for col_name in detected_columns:
+        fig, ax = plt.subplots(figsize=(8, 8))
+
+        if col_name not in gdf.columns:
+            print(f"Warning: Column '{col_name}' not found in data. Skipping.")
+            plt.close()
+            continue
+
+        valid_data = gdf[col_name].dropna()
+        counts, _ = np.histogram(valid_data, bins=bins)
+        bin_labels_with_counts = [
+            f"{label} ({count})" for label, count in zip(bin_labels, counts)
+        ]
+
+        # Plot map
+        gdf.plot(
+            column=col_name,
+            cmap=cmap,
+            norm=norm,
+            edgecolor=edge_color,
+            linewidth=0.5,
+            legend=False,
+            ax=ax,
+            missing_kwds={'color': 'lightgrey', 'edgecolor': 'white', 'linewidth': 0.3}
+        )
+
+        # District boundaries
+        district_boundaries = gdf.dissolve(by='FIRST_DNAM')
+        district_boundaries.boundary.plot(
+            ax=ax,
+            color='gray',
+            linewidth=1.0,
+            zorder=2
+        )
+
+        # Custom legend
+        legend_elements = [
+            Patch(facecolor=cmap(norm(bin_start)),
+                  edgecolor='black',
+                  label=label)
+            for bin_start, label in zip(bins[:-1], bin_labels_with_counts)
+        ]
+        ax.legend(
+            handles=legend_elements,
+            loc='lower left',
+            fontsize=7,
+            title="Cases per 1000",
+            title_fontsize=8,
+            frameon=True,
+            framealpha=1.0,
+            ncol=1
+        )
+
+        ax.axis("off")
+
+        # Save the plot
+        sanitized_col_name = col_name.replace(" ", "_").replace("/", "_")
+        file_path = os.path.join(output_folder, f"{sanitized_col_name}.png")
+        plt.savefig(file_path, dpi=300, bbox_inches="tight")
+        print(f"Map for '{col_name}' saved as {file_path} to {output_folder}")
+
+
+        plt.close()
+
+
+
 
 
 
