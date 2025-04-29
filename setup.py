@@ -12,7 +12,8 @@ setup(
         'xlrd>=2.0.0',         # If reading older .xls files
         'pyreadstat>=1.1.4',   # Optional: for reading Stata/SAS/SPSS if needed later
         'tabulate>=0.8.9',
-        'geopandas'
+        'geopandas',
+        'matplotlib>=3.1.0'
     ],
     description='SNT Toolbox for data processing',
     author='Mohamed Sillah Kanu',
