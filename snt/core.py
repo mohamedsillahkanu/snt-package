@@ -332,6 +332,140 @@ def outlier_summary_after_correction(df):
     return summary_df
 
 
+# Epi stratification
+
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+from functools import reduce
+import os
+
+def epi_stratification(
+    routine_data_path,
+    population_data_path,
+    shapefile_path,
+    output_folder='epi_output',
+    output_filename='adjusted_incidence_with_mean_median.xlsx'
+):
+    # Create output directory if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    output_file = os.path.join(output_folder, output_filename)
+
+    # Load input data
+    routine_data = pd.read_excel(routine_data_path)
+    population_data = pd.read_excel(population_data_path)
+    shapefile_data = gpd.read_file(shapefile_path)
+    df = routine_data.copy()
+
+    # Preprocess dates
+    df['date'] = df['year'].astype(str) + '-' + df['month'].astype(str).str.zfill(2)
+    df['date'] = pd.to_datetime(df['date'], format='%Y-%m').dt.to_period('M')
+    df['Total_Reports'] = df[['allout', 'susp', 'test', 'conf', 'maltreat']].sum(axis=1)
+
+    # Dynamic year range
+    start = df['date'].min().year
+    end = df['date'].max().year
+    years = range(start, end + 1)
+
+    # First reporting date
+    df_active = df[df['Total_Reports'] > 0]
+    first_report_dates = df_active.groupby(['adm1', 'adm2', 'adm3', 'hf_uid'])['date'].min().reset_index()
+    first_report_dates.rename(columns={'date': 'First_Reported_Date'}, inplace=True)
+
+    # Reporting stats
+    reporting_stats_by_year = []
+    for year in years:
+        df_year = df[df['year'] == year]
+        reported = (
+            df_year[df_year['conf'] > 0]
+            .groupby(['adm1', 'adm2', 'adm3'], as_index=False)['conf']
+            .count()
+            .rename(columns={'conf': f'Times_Reported_{year}'})
+        )
+        expected = (
+            first_report_dates
+            .assign(Times_Expected=lambda x: np.where(
+                x['First_Reported_Date'].dt.year == year,
+                12 - x['First_Reported_Date'].dt.month + 1,
+                np.where(year > x['First_Reported_Date'].dt.year, 12, 0)
+            ))
+            .groupby(['adm1', 'adm2', 'adm3'], as_index=False)['Times_Expected']
+            .sum()
+            .rename(columns={'Times_Expected': f'Times_Expected_To_Report_{year}'})
+        )
+        stats = pd.merge(expected, reported, on=['adm1', 'adm2', 'adm3'], how='outer')
+        stats[f'Times_Reported_{year}'] = stats[f'Times_Reported_{year}'].fillna(0)
+        stats[f'Times_Expected_To_Report_{year}'] = stats[f'Times_Expected_To_Report_{year}'].fillna(0)
+        stats[f'conf_RR_{year}'] = (
+            stats[f'Times_Reported_{year}']
+            .div(stats[f'Times_Expected_To_Report_{year}'])
+            .replace([np.inf, -np.inf], 0)
+            .fillna(0)
+            .round(2)
+            .mul(100)
+        )
+        reporting_stats_by_year.append(stats)
+
+    confirmed_data = reduce(
+        lambda left, right: pd.merge(left, right, on=['adm1', 'adm2', 'adm3'], how='outer'),
+        reporting_stats_by_year
+    )
+
+    # Aggregated routine data by year
+    dfs = []
+    for year in years:
+        df_year = df[df['year'] == year]
+        grouped = df_year.groupby(['adm1', 'adm2', 'adm3'], as_index=False)[['conf', 'test', 'pres']].sum()
+        grouped = grouped.rename(columns={
+            'conf': f'conf_{year}', 'test': f'test_{year}', 'pres': f'pres_{year}'
+        })
+        dfs.append(grouped)
+
+    df_merge = reduce(lambda left, right: pd.merge(left, right, on=['adm1', 'adm2', 'adm3'], how='outer'), dfs)
+
+    # Merge all
+    df1 = df_merge.merge(confirmed_data, on=['adm1', 'adm2', 'adm3'], how='left')
+    df2 = df1.merge(population_data, on='adm3', how='left')
+    data = shapefile_data.merge(df2, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left')
+
+    # Compute metrics
+    for year in years:
+        conf_col = f"conf_{year}"
+        test_col = f"test_{year}"
+        pop_col = f"pop{year}"
+        pres_col = f"pres_{year}"
+        conf_RR_col = f"conf_RR_{year}"
+
+        if not all(col in data.columns for col in [conf_col, test_col, pop_col, pres_col, conf_RR_col]):
+            continue
+
+        data[f'TPR_{year}'] = data[conf_col].div(data[test_col]).mul(1000)
+        data[f'crude_incidence_{year}'] = data[conf_col].div(data[pop_col]).mul(1000)
+        data[f'presumed_adjusted_case_{year}'] = data[conf_col].add(data[pres_col].mul(data[f'TPR_{year}']))
+        data[f'adjusted1_{year}'] = data[f'presumed_adjusted_case_{year}'].div(data[pop_col]).mul(1000)
+        data[f'presumed_adjusted_case_RR_{year}'] = data[f'presumed_adjusted_case_{year}'].div(data[conf_RR_col])
+        data[f'adjusted2_{year}'] = data[f'presumed_adjusted_case_RR_{year}'].div(data[pop_col]).mul(1000)
+        data[f'adjusted3_{year}'] = (
+            data[f'adjusted2_{year}']
+            .add(data[f'adjusted2_{year}'].mul(data['CSpr']).div(data['CSpu']))
+            .add(data[f'adjusted2_{year}'].mul(data['CSn']).div(data['CSpu']))
+            .div(data[pop_col])
+            .mul(1000)
+        )
+
+    # Summary stats
+    for prefix in ['adjusted1', 'adjusted2', 'adjusted3']:
+        cols = [f'{prefix}_{year}' for year in years if f'{prefix}_{year}' in data.columns]
+        data[f'{prefix}_mean'] = data[cols].mean(axis=1)
+        data[f'{prefix}_median'] = data[cols].median(axis=1)
+
+    # Save
+    data.to_excel(output_file, index=False)
+    print(f"Data has been successfully saved to {output_file}")
+    return data
+
+
+
 
 
 
