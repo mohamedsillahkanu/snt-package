@@ -369,7 +369,7 @@ def epi_stratification(
 
     # First reporting date
     df_active = df[df['Total_Reports'] > 0]
-    first_report_dates = df_active.groupby(['adm1', 'adm2', 'adm3', 'hf_uid'])['date'].min().reset_index()
+    first_report_dates = df_active.groupby(['adm1', 'adm2', 'adm3', 'hf'])['date'].min().reset_index()
     first_report_dates.rename(columns={'date': 'First_Reported_Date'}, inplace=True)
 
     # Reporting stats
