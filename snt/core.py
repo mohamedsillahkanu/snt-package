@@ -436,7 +436,7 @@ def epi_stratification(
         if not all(col in data.columns for col in [conf_col, test_col, pop_col, pres_col, conf_RR_col]):
             continue
 
-        data[f'TPR_{year}'] = data[conf_col].div(data[test_col]).mul(100)
+        data[f'TPR_{year}'] = data[conf_col].div(data[test_col])
         data[f'crude_incidence_{year}'] = data[conf_col].div(data[pop_col]).mul(1000)
         data[f'presumed_adjusted_case_{year}'] = data[conf_col].add(data[pres_col].mul(data[f'TPR_{year}']))
         data[f'adjusted1_{year}'] = data[f'presumed_adjusted_case_{year}'].div(data[pop_col]).mul(1000)
