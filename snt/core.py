@@ -4,7 +4,13 @@ from pathlib import Path
 import numpy as np
 from tabulate import tabulate
 
+from pathlib import Path
+import pandas as pd
+from tabulate import tabulate
+import math
+
 def concatenate():
+    # Combine the files
     files = Path("input_files/routine").glob("*.xls")
     df_list = [pd.read_excel(file) for file in files]
     combined_df = pd.concat(df_list, ignore_index=True)
@@ -13,16 +19,15 @@ def concatenate():
     print("\n=== Preview of Combined Data ===")
     print(tabulate(combined_df.head(), headers='keys', tablefmt='grid'))
 
-    # Print summary statistics
-    print("\n=== Summary Statistics ===")
-    print(tabulate(combined_df.describe(include='all'), headers='keys', tablefmt='grid'))
-
-    # Print column names
-    print("\n=== Column Names ===")
-    col_df = pd.DataFrame(combined_df.columns, columns=['Column Names'])
-    print(tabulate(col_df, headers='keys', tablefmt='grid'))
+    # Format column names into 3 columns
+    print("\n=== Column Names (3 per row) ===")
+    columns = list(combined_df.columns)
+    padded_cols = columns + [""] * ((3 - len(columns) % 3) % 3)  # pad to multiple of 3
+    col_table = [padded_cols[i:i+3] for i in range(0, len(padded_cols), 3)]
+    print(tabulate(col_table, headers=["Column 1", "Column 2", "Column 3"], tablefmt="grid"))
 
     return combined_df
+
 
 
 def rename(df, dict_path):
