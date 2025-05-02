@@ -7,7 +7,7 @@ def concatenate():
     files = Path("input_files/routine").glob("*.xls")
     df_list = [pd.read_excel(file) for file in files]
     combined_df = pd.concat(df_list, ignore_index=True)
-    combined_df.head()
+    print(tabulate(combined_df.head(), headers='keys', tablefmt='grid'))
     return combined_df
 
 def rename(df, dict_path):
