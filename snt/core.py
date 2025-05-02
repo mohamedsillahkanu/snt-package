@@ -73,9 +73,9 @@ def sort(df):
 
     return df_sorted
 
-def split(df, split_path):
+def split(df):
     # Read the mapping Excel file
-    mapping = pd.read_excel(split_path)
+    mapping = pd.read_excel("input_files/others/split colums.xlsx")
 
     # Get names
     original_col = mapping['original_col'].iloc[0]
