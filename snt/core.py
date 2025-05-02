@@ -2,13 +2,28 @@
 import pandas as pd
 from pathlib import Path
 import numpy as np
+from tabulate import tabulate
 
 def concatenate():
     files = Path("input_files/routine").glob("*.xls")
     df_list = [pd.read_excel(file) for file in files]
     combined_df = pd.concat(df_list, ignore_index=True)
-    print(tabulate(combined_df.tail(10), headers='keys', tablefmt='grid'))
+
+    # Print head
+    print("\n=== Preview of Combined Data ===")
+    print(tabulate(combined_df.head(), headers='keys', tablefmt='grid'))
+
+    # Print summary statistics
+    print("\n=== Summary Statistics ===")
+    print(tabulate(combined_df.describe(include='all'), headers='keys', tablefmt='grid'))
+
+    # Print column names
+    print("\n=== Column Names ===")
+    col_df = pd.DataFrame(combined_df.columns, columns=['Column Names'])
+    print(tabulate(col_df, headers='keys', tablefmt='grid'))
+
     return combined_df
+
 
 def rename(df, dict_path):
     name_map = pd.read_excel(dict_path)
