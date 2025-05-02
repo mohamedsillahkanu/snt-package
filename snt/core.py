@@ -29,7 +29,7 @@ def concatenate():
     return combined_df
 
 def rename(df):
-    name_map = pd.read_excel(dict_path)
+    name_map = pd.read_excel("input_files/others/old_new_rename.xlsx")
     for i in range(len(name_map)):
         old = name_map.iloc[i, 0]
         new = name_map.iloc[i, 1]
