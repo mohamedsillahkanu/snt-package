@@ -28,9 +28,7 @@ def concatenate():
 
     return combined_df
 
-
-
-def rename(df, dict_path):
+def rename(df):
     name_map = pd.read_excel(dict_path)
     for i in range(len(name_map)):
         old = name_map.iloc[i, 0]
