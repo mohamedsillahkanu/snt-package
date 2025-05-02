@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 def concatenate():
-    files = Path(input_files/routine).glob("*.xls")
+    files = Path("input_files/routine").glob("*.xls")
     df_list = [pd.read_excel(file) for file in files]
     print(df_list.head())
     return pd.concat(df_list, ignore_index=True)
