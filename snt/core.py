@@ -6,8 +6,9 @@ import numpy as np
 def concatenate():
     files = Path("input_files/routine").glob("*.xls")
     df_list = [pd.read_excel(file) for file in files]
-    print(df_list.head())
-    return pd.concat(df_list, ignore_index=True)
+    combined_df = pd.concat(df_list, ignore_index=True)
+    print(combined_df.head())
+    return combined_df
 
 def rename(df, dict_path):
     name_map = pd.read_excel(dict_path)
