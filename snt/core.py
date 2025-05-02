@@ -36,8 +36,8 @@ def rename(df):
         df.rename(columns={old: new}, inplace=True)
     return df
 
-def compute(df, compute_path):
-    comp = pd.read_excel(compute_path)
+def compute(df):
+    comp = pd.read_excel("input_files/others/compute new variables_python.xlsx")
     for i in range(len(comp)):
         new_var = comp['new_variable'][i]
         op = comp['operation'][i]
@@ -50,9 +50,9 @@ def compute(df, compute_path):
             df[new_var] = df[new_var].clip(lower=0)
     return df
 
-def sort(df, compute_path):
+def sort(df):
     # Read the compute instructions
-    comp = pd.read_excel(compute_path)
+    comp = pd.read_excel("input_files/others/compute new variables_python.xlsx")
 
     sorted_columns = []
     
