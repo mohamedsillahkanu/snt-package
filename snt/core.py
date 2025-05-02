@@ -17,7 +17,7 @@ def concatenate():
 
     # Print head
     print("\n=== Preview of Combined Data ===")
-    print(tabulate(combined_df.head(), headers='keys', tablefmt='grid'))
+    print(tabulate(combined_df.tail(), headers='keys', tablefmt='grid'))
 
     # Format column names into 3 columns
     print("\n=== Column Names (3 per row) ===")
