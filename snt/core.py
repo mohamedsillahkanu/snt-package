@@ -679,7 +679,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import datetime
 
 def export_and_interpret(
-    epi_data_path,
+    df,
     output_folder="final_report",
     report_title="Malaria Epidemiological Analysis Report",
     author="Malaria Surveillance Team"
@@ -689,8 +689,8 @@ def export_and_interpret(
     
     Parameters:
     -----------
-    epi_data_path : str
-        Path to the Excel file containing the epidemiological data
+    df : pandas.DataFrame
+        DataFrame containing the epidemiological data
     output_folder : str
         Folder to save the final report
     report_title : str
@@ -700,14 +700,14 @@ def export_and_interpret(
     
     Returns:
     --------
-    str
-        Path to the saved Word document
+    pandas.DataFrame
+        The same DataFrame that was passed in
     """
     # Create output directory if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)
     
-    # Load the epidemiological data for interpretation
-    epi_data = pd.read_excel(epi_data_path)
+    # Use the provided DataFrame directly
+    epi_data = df.copy()
     
     # Create a new Word document
     doc = Document()
@@ -941,6 +941,11 @@ def export_and_interpret(
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(output_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
+    
+    print(f"Report successfully generated and saved to {output_file}")
+    
+    # Return the input DataFrame unchanged
+    return df
     
     print(f"Report successfully generated and saved to {output_file}")
     return output_file
