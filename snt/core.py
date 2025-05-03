@@ -620,7 +620,7 @@ import numpy as np
 
 def subplots(epi_data_path, shapefile_path):
     prefixes = ['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_']
-    os.makedirs("epi_maps", exist_ok=True)
+    os.makedirs("subplots", exist_ok=True)
 
     df1 = pd.read_excel(epi_data_path)
     gdf_shape = gpd.read_file(shapefile_path)
@@ -741,10 +741,8 @@ def export_and_interpret(
     
     # Find all map files
     map_folders = [
-        "epi_maps/crude_incidence",
-        "epi_maps/adjusted1",
-        "epi_maps/adjusted2",
-        "epi_maps/adjusted3"
+        "subplots"
+       
     ]
     
     # Add section for each type of incidence
@@ -777,7 +775,7 @@ def export_and_interpret(
     
     # Process each incidence type
     for incidence_type, info in incidence_types.items():
-        folder_path = f"epi_maps/{incidence_type}"
+        folder_path = f"subplots"
         map_files = list(Path(folder_path).glob("*.png")) if os.path.exists(folder_path) else []
         
         if not map_files:
