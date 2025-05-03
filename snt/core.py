@@ -388,8 +388,6 @@ from functools import reduce
 import os
 
 def epi_stratification(
-    routine_data_path,
-    population_data_path,
     output_folder='epi_output',
     output_filename='adjusted_incidence_with_mean_median.xlsx'
 ):
@@ -398,7 +396,7 @@ def epi_stratification(
     output_file = os.path.join(output_folder, output_filename)
 
     # Load input data
-    routine_data = pd.read_excel(routine_data_path)
+    routine_data = pd.read_excel("input_files/routine/clean_data/routine_data (1).xlsx")
     population_data = pd.read_excel(population_data_path)
     df = routine_data.copy()
 
