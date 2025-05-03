@@ -609,51 +609,61 @@ def individual_plots(epi_data_path,
 
 
 # Subplots
+import os
+import re
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from matplotlib.colors import BoundaryNorm
+from matplotlib.patches import Patch
+import numpy as np
+
 def subplots(epi_data_path, shapefile_path):
     prefixes = ['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_']
     os.makedirs("subplots", exist_ok=True)
-
+    
     df1 = pd.read_excel(epi_data_path)
     gdf_shape = gpd.read_file(shapefile_path)
     gdf = gdf_shape.merge(df1, on=["FIRST_DNAM", "FIRST_CHIE"], how="left", validate="1:1")
-
+    
     bins = [0, 50, 100, 250, 450, 700, 1000, float("inf")]
     labels = ['<50', '50-100', '100-250', '250-450', '450-700', '700-1000', '>1000']
     cmap = plt.cm.get_cmap("RdYlBu_r", len(bins)-1)
     norm = BoundaryNorm(bins, cmap.N)
-
+    
     for prefix in prefixes:
         pattern = re.compile(f"^{re.escape(prefix)}(\\d{{4}})$")
         columns = [(col, pattern.match(col).group(1)) for col in gdf.columns if pattern.match(col)]
-
+        
         if not columns:
             print(f"[Skipped] No columns found for prefix '{prefix}'")
             continue
-
+            
         columns.sort(key=lambda x: x[1])
-        fig, axes = plt.subplots(3, 3, figsize=(14, 10))
+        
+        # Create a 3x3 grid
+        fig, axes = plt.subplots(3, 3, figsize=(12, 10))
         axes = axes.flatten()
-
-        # Plot maps
-        for i, ax in enumerate(axes):
-            if i < len(columns):
-                col, year = columns[i]
-                gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5,
-                         ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
-                gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
-                ax.set_title(year, fontsize=12)
+        
+        # Hide any unused axes
+        for i in range(len(columns), 9):
+            axes[i].set_visible(False)
+        
+        for i, ((col, year), ax) in enumerate(zip(columns, axes)):
+            gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5, ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
+            gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
+            
+            data = gdf[col].dropna()
+            counts, _ = np.histogram(data, bins=bins)
+            legend_labels = [f"{label} ({count})" for label, count in zip(labels, counts)]
+            ax.set_title(year, fontsize=14)
             ax.axis("off")
-
-        # Add shared legend on the right center
-        sample_data = gdf[columns[0][0]].dropna()
-        counts, _ = np.histogram(sample_data, bins=bins)
-        legend_labels = [f"{label}" for label in labels]
-        legend_handles = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab)
-                          for b, lab in zip(bins[:-1], legend_labels)]
-        fig.legend(handles=legend_handles, title="Cases per 1000", loc='center left',
-                   bbox_to_anchor=(1.02, 0.5), fontsize=10, title_fontsize=11)
-
-        plt.tight_layout(rect=[0, 0, 0.9, 1])
+        
+        # Create legend on the right side center
+        legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
+        fig.legend(handles=legend_items, loc='center right', bbox_to_anchor=(1.15, 0.5), fontsize=10, title="Cases per 1000")
+        
+        plt.tight_layout()
         output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
