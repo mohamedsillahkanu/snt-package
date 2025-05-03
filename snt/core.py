@@ -397,7 +397,7 @@ def epi_stratification(
 
     # Load input data
     routine_data = pd.read_excel("input_files/routine/clean_data/routine_data (1).xlsx")
-    population_data = pd.read_excel(population_data_path)
+    population_data = pd.read_excel("input_files/routine/population_data/population_data.xlsx")
     df = routine_data.copy()
 
     # Preprocess dates
