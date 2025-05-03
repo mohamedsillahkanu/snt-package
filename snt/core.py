@@ -609,22 +609,12 @@ def individual_plots(epi_data_path,
 
 
 # Subplots
-import os
-import re
-import pandas as pd
-import geopandas as gpd
-import matplotlib.pyplot as plt
-from matplotlib.colors import BoundaryNorm
-from matplotlib.patches import Patch
-import numpy as np
-
 def subplots(epi_data_path, shapefile_path):
     prefixes = ['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_']
     os.makedirs("subplots", exist_ok=True)
 
     df1 = pd.read_excel(epi_data_path)
     gdf_shape = gpd.read_file(shapefile_path)
-    
     gdf = gdf_shape.merge(df1, on=["FIRST_DNAM", "FIRST_CHIE"], how="left", validate="1:1")
 
     bins = [0, 50, 100, 250, 450, 700, 1000, float("inf")]
@@ -641,28 +631,31 @@ def subplots(epi_data_path, shapefile_path):
             continue
 
         columns.sort(key=lambda x: x[1])
-        fig, axes = plt.subplots(1, len(columns), figsize=(len(columns)*3.5, 5))
-        if len(columns) == 1:
-            axes = [axes]
+        fig, axes = plt.subplots(3, 3, figsize=(14, 10))
+        axes = axes.flatten()
 
-        for (col, year), ax in zip(columns, axes):
-            gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5,
-                     ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
-            gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
-
-            data = gdf[col].dropna()
-            counts, _ = np.histogram(data, bins=bins)
-            legend_labels = [f"{label} ({count})" for label, count in zip(labels, counts)]
-            legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab)
-                            for b, lab in zip(bins[:-1], legend_labels)]
-
-            ax.legend(handles=legend_items, loc='upper center', bbox_to_anchor=(0.5, -0.15), fontsize=7, title="Cases per 1000")
-            ax.set_title(year, fontsize=14)
+        # Plot maps
+        for i, ax in enumerate(axes):
+            if i < len(columns):
+                col, year = columns[i]
+                gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5,
+                         ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
+                gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
+                ax.set_title(year, fontsize=12)
             ax.axis("off")
 
-        plt.tight_layout(rect=[0, 0.1, 1, 0.95])
-        output_path = f"epi_maps/{prefix.rstrip('_')}_maps.png"
-        plt.savefig(output_path, dpi=300)
+        # Add shared legend on the right center
+        sample_data = gdf[columns[0][0]].dropna()
+        counts, _ = np.histogram(sample_data, bins=bins)
+        legend_labels = [f"{label}" for label in labels]
+        legend_handles = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab)
+                          for b, lab in zip(bins[:-1], legend_labels)]
+        fig.legend(handles=legend_handles, title="Cases per 1000", loc='center left',
+                   bbox_to_anchor=(1.02, 0.5), fontsize=10, title_fontsize=11)
+
+        plt.tight_layout(rect=[0, 0, 0.9, 1])
+        output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         print(f"[Saved] {output_path}")
 
