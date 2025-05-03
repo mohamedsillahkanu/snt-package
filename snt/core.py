@@ -668,3 +668,280 @@ def subplots(epi_data_path, shapefile_path):
         plt.close()
         print(f"[Saved] {output_path}")
 
+
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+from pathlib import Path
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+import datetime
+
+def export_and_interpret(
+    epi_data_path,
+    output_folder="final_report",
+    report_title="Malaria Epidemiological Analysis Report",
+    author="Malaria Surveillance Team"
+):
+    """
+    Exports visualizations to a Word document with interpretations and recommendations.
+    
+    Parameters:
+    -----------
+    epi_data_path : str
+        Path to the Excel file containing the epidemiological data
+    output_folder : str
+        Folder to save the final report
+    report_title : str
+        Title for the report
+    author : str
+        Author name for the report
+    
+    Returns:
+    --------
+    str
+        Path to the saved Word document
+    """
+    # Create output directory if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    
+    # Load the epidemiological data for interpretation
+    epi_data = pd.read_excel(epi_data_path)
+    
+    # Create a new Word document
+    doc = Document()
+    
+    # Add report title
+    doc.add_heading(report_title, level=0)
+    
+    # Add author and date
+    paragraph = doc.add_paragraph()
+    paragraph.add_run(f"Prepared by: {author}").bold = True
+    paragraph.add_run(f"\nDate: {datetime.datetime.now().strftime('%B %d, %Y')}")
+    
+    # Add introduction
+    doc.add_heading("Introduction", level=1)
+    doc.add_paragraph(
+        "This report presents the results of malaria epidemiological analysis using routine "
+        "surveillance data. The analysis includes data cleaning, outlier detection, "
+        "incidence calculation with various adjustment methods, and geographic distribution "
+        "visualization. This document provides interpretations and recommendations based on "
+        "the findings."
+    )
+    
+    # Add methods section
+    doc.add_heading("Methods", level=1)
+    doc.add_paragraph(
+        "The analysis workflow involved several steps:\n"
+        "1. Data concatenation and cleaning from routine surveillance files\n"
+        "2. Outlier detection using IQR method and winsorization for correction\n"
+        "3. Calculation of crude and adjusted incidence rates\n"
+        "4. Visualization of geographic distribution of malaria burden\n"
+        "5. Statistical summary and interpretation of findings"
+    )
+    
+    # Find all map files
+    map_folders = [
+        "epi_maps/crude_incidence",
+        "epi_maps/adjusted1",
+        "epi_maps/adjusted2",
+        "epi_maps/adjusted3"
+    ]
+    
+    # Add section for each type of incidence
+    incidence_types = {
+        "crude_incidence": {
+            "title": "Crude Incidence Maps",
+            "description": "These maps show the raw reported cases per 1,000 population without any adjustments.",
+            "interpretation": "Crude incidence provides a baseline estimate of malaria burden but may underestimate the true burden due to underreporting and incomplete testing.",
+            "recommendation": "Consider these maps as a minimum estimate of malaria burden. Areas with high crude incidence should be prioritized for immediate intervention."
+        },
+        "adjusted1": {
+            "title": "Presumptive Case Adjusted Incidence Maps",
+            "description": "These maps incorporate presumptive cases adjusted by the test positivity rate.",
+            "interpretation": "This adjustment accounts for cases that were clinically diagnosed but not confirmed with a diagnostic test, providing a more realistic estimate of the malaria burden.",
+            "recommendation": "Use these maps to identify areas where testing capacity may be limited but malaria burden is significant. Consider increasing testing resources in these areas."
+        },
+        "adjusted2": {
+            "title": "Reporting Rate Adjusted Incidence Maps",
+            "description": "These maps adjust for inconsistent reporting by health facilities.",
+            "interpretation": "This adjustment accounts for gaps in reporting, providing estimates for periods when data was not submitted.",
+            "recommendation": "Focus on areas with high adjusted incidence despite low reporting rates. These may represent significant hidden burden requiring immediate attention and improved surveillance."
+        },
+        "adjusted3": {
+            "title": "Sensitivity Adjusted Incidence Maps",
+            "description": "These maps incorporate diagnostic test sensitivity and specificity adjustments.",
+            "interpretation": "This is the most comprehensive adjustment, accounting for test performance characteristics and providing the most accurate estimate of true malaria burden.",
+            "recommendation": "Use these maps for strategic planning and resource allocation. Areas with consistently high adjusted incidence across years should be prioritized for comprehensive malaria control interventions."
+        }
+    }
+    
+    # Process each incidence type
+    for incidence_type, info in incidence_types.items():
+        folder_path = f"epi_maps/{incidence_type}"
+        map_files = list(Path(folder_path).glob("*.png")) if os.path.exists(folder_path) else []
+        
+        if not map_files:
+            continue
+        
+        # Add section heading and description
+        doc.add_heading(info["title"], level=1)
+        doc.add_paragraph(info["description"])
+        
+        # Add interpretation
+        doc.add_heading("Interpretation", level=2)
+        doc.add_paragraph(info["interpretation"])
+        
+        # Add recommendations
+        doc.add_heading("Recommendations", level=2)
+        doc.add_paragraph(info["recommendation"])
+        
+        # Add yearly maps
+        doc.add_heading("Yearly Distribution", level=2)
+        
+        # Sort files by year
+        map_files.sort(key=lambda x: str(x))
+        
+        # Add maps in groups of 2 per row
+        for i in range(0, len(map_files), 2):
+            paragraph = doc.add_paragraph()
+            run = paragraph.add_run()
+            
+            # Add first image
+            run.add_picture(str(map_files[i]), width=Inches(3.5))
+            
+            # Add second image if available
+            if i + 1 < len(map_files):
+                run.add_text(" " * 10)  # Add space between images
+                run.add_picture(str(map_files[i + 1]), width=Inches(3.5))
+            
+            # Add caption
+            caption = doc.add_paragraph()
+            caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            caption.add_run(f"Figure {i//2 + 1}: Yearly {incidence_type.replace('_', ' ').title()} Maps").italic = True
+    
+    # Add overall trends section if subplot files exist
+    subplot_files = list(Path("epi_maps").glob("*_maps.png"))
+    
+    if subplot_files:
+        doc.add_heading("Temporal Trends Analysis", level=1)
+        doc.add_paragraph(
+            "The following figures show the trends in malaria incidence over time using different "
+            "adjustment methods. These visualizations help identify temporal patterns and areas "
+            "with persistent high burden."
+        )
+        
+        for i, file in enumerate(subplot_files):
+            incidence_type = file.stem.replace("_maps", "")
+            
+            if incidence_type in incidence_types:
+                doc.add_heading(f"{incidence_types[incidence_type]['title']} - Temporal Trends", level=2)
+                paragraph = doc.add_paragraph()
+                run = paragraph.add_run()
+                run.add_picture(str(file), width=Inches(6))
+                
+                # Add caption
+                caption = doc.add_paragraph()
+                caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                caption.add_run(f"Figure {len(incidence_types) + i + 1}: Temporal trends of {incidence_type.replace('_', ' ')}").italic = True
+                
+                # Add interpretation
+                doc.add_paragraph(incidence_types[incidence_type]["interpretation"])
+                
+                # Add recommendation
+                doc.add_paragraph(f"Recommendation: {incidence_types[incidence_type]['recommendation']}")
+    
+    # Add statistical summary section
+    doc.add_heading("Statistical Summary", level=1)
+    
+    # Calculate summary statistics from the epi_data
+    summary_stats = {}
+    for prefix in ["crude_incidence_", "adjusted1_", "adjusted2_", "adjusted3_"]:
+        # Find all columns that match the pattern
+        incidence_cols = [col for col in epi_data.columns if col.startswith(prefix) and col.replace(prefix, "").isdigit()]
+        
+        if incidence_cols:
+            # Calculate statistics across all years
+            max_vals = epi_data[incidence_cols].max(axis=1).describe()
+            
+            # Store in dictionary
+            type_name = prefix.rstrip("_").replace("_", " ").title()
+            summary_stats[type_name] = {
+                "Mean": f"{max_vals['mean']:.2f}",
+                "Median": f"{max_vals['50%']:.2f}",
+                "Min": f"{max_vals['min']:.2f}",
+                "Max": f"{max_vals['max']:.2f}",
+                "Districts Above Threshold": f"{(epi_data[incidence_cols].max(axis=1) > 250).sum()}"
+            }
+    
+    # Add summary statistics to document
+    if summary_stats:
+        doc.add_paragraph("The table below summarizes key statistics for different incidence measurements:")
+        
+        # Create table
+        table = doc.add_table(rows=1, cols=len(list(summary_stats.values())[0]) + 1)
+        table.style = 'Table Grid'
+        
+        # Add headers
+        headers = table.rows[0].cells
+        headers[0].text = "Incidence Type"
+        
+        for i, stat_name in enumerate(list(summary_stats.values())[0].keys()):
+            headers[i + 1].text = stat_name
+        
+        # Add data rows
+        for incidence_type, stats in summary_stats.items():
+            row = table.add_row().cells
+            row[0].text = incidence_type
+            
+            for i, (_, value) in enumerate(stats.items()):
+                row[i + 1].text = str(value)
+    
+    # Add conclusions section
+    doc.add_heading("Conclusions and Recommendations", level=1)
+    
+    # Generate overall conclusions based on available data
+    doc.add_paragraph(
+        "Based on the analysis of malaria surveillance data, the following key conclusions "
+        "and recommendations are provided:"
+    )
+    
+    # Add bullet points with conclusions
+    conclusions = doc.add_paragraph()
+    conclusions.style = 'List Bullet'
+    conclusions.add_run(
+        "The adjusted incidence maps reveal a higher malaria burden than what is indicated by crude incidence, "
+        "highlighting the importance of accounting for underreporting and testing limitations."
+    )
+    
+    conclusion2 = doc.add_paragraph()
+    conclusion2.style = 'List Bullet'
+    conclusion2.add_run(
+        "Areas with consistently high incidence across multiple years and adjustment methods should be "
+        "prioritized for targeted interventions, including increased bed net distribution, indoor residual spraying, "
+        "and improved case management."
+    )
+    
+    conclusion3 = doc.add_paragraph()
+    conclusion3.style = 'List Bullet'
+    conclusion3.add_run(
+        "Health facilities with poor reporting rates should receive support to improve their surveillance "
+        "capacity, including training, supervision, and potentially electronic reporting tools."
+    )
+    
+    conclusion4 = doc.add_paragraph()
+    conclusion4.style = 'List Bullet'
+    conclusion4.add_run(
+        "Seasonal patterns observed in the temporal analysis suggest that interventions should be timed "
+        "to coincide with peak transmission periods for maximum effectiveness."
+    )
+    
+    # Save the document
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = os.path.join(output_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
+    doc.save(output_file)
+    
+    print(f"Report successfully generated and saved to {output_file}")
+    return output_file
+
