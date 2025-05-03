@@ -28,68 +28,94 @@ def concatenate():
 
     return combined_df
 
-def rename():
+def rename(df):
     name_map = pd.read_excel("input_files/others/old_new_rename.xlsx")
-    for i in range(len(name_map)):
-        old = name_map.iloc[i, 0]
-        new = name_map.iloc[i, 1]
-        df.rename(columns={old: new}, inplace=True)
-    return df
+    rename_dict = dict(zip(name_map.iloc[:, 0], name_map.iloc[:, 1]))
+    return df.rename(columns=rename_dict)
+    
+def compute(df):
+    try:
+        comp = pd.read_excel("input_files/others/compute new variables_python.xlsx")
+    except Exception as e:
+        raise FileNotFoundError(f"Error reading compute file: {e}")
 
-def compute():
-    comp = pd.read_excel("input_files/others/compute new variables_python.xlsx")
     for i in range(len(comp)):
-        new_var = comp['new_variable'][i]
-        op = comp['operation'][i]
-        components = [x.strip() for x in comp['components'][i].split(',')]
+        new_var = comp.at[i, 'new_variable']
+        op = comp.at[i, 'operation']
+        components = [x.strip() for x in comp.at[i, 'components'].split(',')]
+
+        # Check if all required columns exist in df
+        missing_cols = [col for col in components if col not in df.columns]
+        if missing_cols:
+            print(f"Skipping '{new_var}' — missing columns: {missing_cols}")
+            continue
 
         if op == "rowsum":
             df[new_var] = df[components].sum(axis=1, skipna=True, min_count=1)
-        elif op == "subtract":
+        elif op == "subtract" and len(components) >= 2:
             df[new_var] = df[components[0]] - df[components[1]]
             df[new_var] = df[new_var].clip(lower=0)
+        else:
+            print(f"Skipping '{new_var}' — unsupported operation or insufficient components.")
+    
     return df
 
-def sort():
-    # Read the compute instructions
-    comp = pd.read_excel("input_files/others/compute new variables_python.xlsx")
+def sort(df):
+    try:
+        comp = pd.read_excel("input_files/others/compute new variables_python.xlsx")
+    except Exception as e:
+        raise FileNotFoundError(f"Could not read compute file: {e}")
 
     sorted_columns = []
-    
-    # For each row in compute_path
+
+    # Collect components and new variables in order
     for i in range(len(comp)):
-        components = [x.strip() for x in comp['components'][i].split(',')]
-        new_var = comp['new_variable'][i]
-        
+        components = [x.strip() for x in str(comp.at[i, 'components']).split(',')]
+        new_var = comp.at[i, 'new_variable']
         sorted_columns.extend(components)
         sorted_columns.append(new_var)
 
-    # Add any remaining columns that were not mentioned
+    # Ensure uniqueness and keep only existing columns
+    sorted_columns = [col for col in dict.fromkeys(sorted_columns) if col in df.columns]
+
+    # Add any remaining columns not in the sort list
     remaining_columns = [col for col in df.columns if col not in sorted_columns]
+
+    # Final column order
     final_order = remaining_columns + sorted_columns
 
-    # Reorder the DataFrame
-    df_sorted = df[final_order]
+    # Reorder DataFrame
+    return df[final_order]
 
-    return df_sorted
 
-def split():
-    # Read the mapping Excel file
-    mapping = pd.read_excel("input_files/others/split colums.xlsx")
+def split(df):
+    try:
+        # Read the mapping file
+        mapping = pd.read_excel("input_files/others/split colums.xlsx")
+    except Exception as e:
+        raise FileNotFoundError(f"Could not read split columns file: {e}")
 
-    # Get names
-    original_col = mapping['original_col'].iloc[0]
-    new_col_month = mapping['new_col_month'].iloc[0]
-    new_col_year = mapping['new_col_year'].iloc[0]
+    # Validate expected columns
+    required_cols = {'original_col', 'new_col_month', 'new_col_year'}
+    if not required_cols.issubset(mapping.columns):
+        raise ValueError(f"Missing expected columns in mapping file: {required_cols - set(mapping.columns)}")
 
-    # Split the original column
-    split_data = df[original_col].str.split(' ', expand=True)
+    original_col = mapping.at[0, 'original_col']
+    new_col_month = mapping.at[0, 'new_col_month']
+    new_col_year = mapping.at[0, 'new_col_year']
 
-    # Assign to new columns
-    df[new_col_month] = split_data[0]
-    df[new_col_year] = split_data[1]
+    # Ensure original column exists in df
+    if original_col not in df.columns:
+        raise KeyError(f"Column '{original_col}' not found in DataFrame.")
 
-    # Define month mappings (English and French)
+    # Split the column
+    split_data = df[original_col].astype(str).str.strip().str.split(' ', n=1, expand=True)
+
+    # Assign new columns
+    df[new_col_month] = split_data[0].str.strip()
+    df[new_col_year] = split_data[1].str.strip() if split_data.shape[1] > 1 else None
+
+    # Month name to number mapping (English and French)
     month_map = {
         'January': '01', 'Janvier': '01',
         'February': '02', 'Février': '02', 'Fevrier': '02',
@@ -105,10 +131,11 @@ def split():
         'December': '12', 'Décembre': '12', 'Decembre': '12'
     }
 
-    # Replace month names
+    # Standardize month
     df[new_col_month] = df[new_col_month].map(lambda x: month_map.get(x, x))
 
     return df
+
 
 ### Outlier detection and correctio with winsorized method
 import pandas as pd
