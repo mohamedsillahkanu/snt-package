@@ -28,7 +28,7 @@ def concatenate():
 
     return combined_df
 
-def rename(df):
+def rename():
     name_map = pd.read_excel("input_files/others/old_new_rename.xlsx")
     for i in range(len(name_map)):
         old = name_map.iloc[i, 0]
@@ -36,7 +36,7 @@ def rename(df):
         df.rename(columns={old: new}, inplace=True)
     return df
 
-def compute(df):
+def compute():
     comp = pd.read_excel("input_files/others/compute new variables_python.xlsx")
     for i in range(len(comp)):
         new_var = comp['new_variable'][i]
@@ -50,7 +50,7 @@ def compute(df):
             df[new_var] = df[new_var].clip(lower=0)
     return df
 
-def sort(df):
+def sort():
     # Read the compute instructions
     comp = pd.read_excel("input_files/others/compute new variables_python.xlsx")
 
@@ -73,7 +73,7 @@ def sort(df):
 
     return df_sorted
 
-def split(df):
+def split():
     # Read the mapping Excel file
     mapping = pd.read_excel("input_files/others/split colums.xlsx")
 
