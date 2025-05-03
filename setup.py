@@ -17,7 +17,7 @@ setup(
     'python-docx>=0.8.11', # For creating Word documents
     'pathlib',             # For file path operations (included in Python 3.4+)
     'Pillow>=8.0.0'        # Required for image handling with python-docx
-]
+],
     description='SNT Toolbox for data processing',
     author='Mohamed Sillah Kanu',
     author_email='sillahmohamedkanu@gmail.com',
