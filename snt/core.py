@@ -750,10 +750,13 @@ from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import datetime
 
-def export_and_interpret(path,
+def export_and_interpret(
+    path,
     report_folder="final_report",
     report_title="Malaria Epidemiological Analysis Report",
-    author="Malaria Surveillance Team"
+    author="Malaria Surveillance Team",
+    subplots_folder="subplots",
+    trends_folder="epi_lineplots"
 ):
     os.makedirs(report_folder, exist_ok=True)
     epi_data = pd.read_excel(path)
@@ -786,7 +789,7 @@ def export_and_interpret(path,
         "5. Statistical summary and interpretation of findings"
     )
 
-    # Dynamic interpretation function
+    # Interpretation summary
     def generate_dynamic_interpretations(df):
         interpretations = {}
         summary_stats = {}
@@ -814,7 +817,7 @@ def export_and_interpret(path,
             }
 
             interpretation = f"{type_name} analysis shows that approximately {pct_high:.1f}% of chiefdoms experience high transmission (>450), " \
-                            f"{pct_moderate:.1f}% moderate (250–450), and {pct_low:.1f}% low (<250). "
+                             f"{pct_moderate:.1f}% moderate (250–450), and {pct_low:.1f}% low (<250). "
 
             if pct_high > 40:
                 interpretation += "This indicates a critical need for intensified malaria control interventions in a significant proportion of areas."
@@ -827,17 +830,15 @@ def export_and_interpret(path,
 
         return pd.DataFrame(summary_stats).T, interpretations
 
-    # Generate interpretations
     df_summary, dynamic_interps = generate_dynamic_interpretations(epi_data)
 
-    # Add summary to document
+    # Transmission Summary Table
     doc.add_heading("Transmission Intensity Summary", level=1)
     doc.add_paragraph(
         "This section summarizes the percentage of chiefdoms with low, moderate, and high malaria transmission. "
         "These statistics are based on the highest annual incidence observed per chiefdom."
     )
 
-    # Insert table
     table = doc.add_table(rows=1, cols=4)
     table.style = 'Table Grid'
     hdr = table.rows[0].cells
@@ -853,18 +854,46 @@ def export_and_interpret(path,
         cells[2].text = f"{row['Moderate']:.1f}"
         cells[3].text = f"{row['High']:.1f}"
 
-    # Add dynamic interpretations
+    # Dynamic interpretation
     doc.add_heading("Interpretation and Recommendations", level=1)
     for inc_type, text in dynamic_interps.items():
         doc.add_heading(inc_type, level=2)
         doc.add_paragraph(text)
 
-    # Save document
+    # Helper to insert figures
+    def add_figure(doc, image_path, caption, fig_num):
+        doc.add_page_break()
+        doc.add_heading(f"Figure {fig_num}", level=2)
+        doc.add_picture(image_path, width=Inches(6))
+        last_paragraph = doc.paragraphs[-1]
+        last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        doc.add_paragraph(f"Figure {fig_num}: {caption}", style='Caption')
+
+    fig_num = 1
+
+    # Add subplots
+    doc.add_heading("Spatial Distribution Maps", level=1)
+    for prefix in ["crude_incidence", "adjusted1", "adjusted2", "adjusted3"]:
+        subplot_path = os.path.join(subplots_folder, f"{prefix}_maps.png")
+        if os.path.exists(subplot_path):
+            caption = f"{prefix.replace('_', ' ').title()} spatial distribution across chiefdoms"
+            add_figure(doc, subplot_path, caption, fig_num)
+            fig_num += 1
+
+    # Add trend line plots
+    doc.add_heading("Temporal Trends", level=1)
+    if os.path.exists(trends_folder):
+        for file in sorted(Path(trends_folder).glob("*.png")):
+            caption = f"Trend of incidence indicators in {file.stem}"
+            add_figure(doc, str(file), caption, fig_num)
+            fig_num += 1
+
+    # Save
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
-
     print(f"✅ Report saved to: {output_file}")
     return output_file
+
 
 
