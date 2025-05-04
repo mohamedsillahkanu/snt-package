@@ -762,8 +762,8 @@ from pathlib import Path
 from docx import Document
 from docx.shared import Inches
 from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 import datetime
-
 
 def add_figure(doc, image_path, caption, fig_num):
     doc.add_page_break()
@@ -815,12 +815,26 @@ def interpret_district_trends(summary_df):
             f"{prefix.replace('_', ' ').title()}: "
             f"{increasing} increasing, {decreasing} decreasing, {stable} stable."
         )
+
         if increasing > decreasing:
-            statement += " Rising transmission may require urgent attention."
+            statement += (
+                " Rising transmission is observed in a majority of chiefdoms, which may indicate emerging outbreaks, "
+                "increased reporting, or gaps in control coverage. Urgent attention is recommended, including enhanced "
+                "surveillance, mass distribution of LLINs, indoor residual spraying (IRS) in hotspot areas, and "
+                "reinforcing case management capacity at facility level."
+            )
         elif decreasing > increasing:
-            statement += " This reflects progress in control efforts."
+            statement += (
+                " The majority of chiefdoms show declining trends, suggesting that current interventions are having a positive effect. "
+                "Continued investment in malaria control should be maintained, including regular monitoring, community engagement, "
+                "and ensuring commodity availability. Consider conducting impact evaluations to identify successful strategies."
+            )
         else:
-            statement += " Trends appear mixed."
+            statement += (
+                " Trends are mixed across chiefdoms. Some areas show improvement while others worsen or remain unchanged. "
+                "This heterogeneity may reflect differences in intervention coverage, health system performance, or ecological factors. "
+                "A tailored approach is advised—strengthening high-burden areas and maintaining gains in others."
+            )
 
         output.append(statement)
     return output
@@ -914,3 +928,4 @@ def export_and_interpret(
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")
+
