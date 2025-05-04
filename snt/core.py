@@ -672,8 +672,7 @@ def subplots(epi_data_path, shapefile_path):
 
 
 
-# Line plots
-
+## Line plots
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -686,18 +685,18 @@ def epi_trends(path, output_folder='epi_lineplots'):
     # Read the Excel file
     df = pd.read_excel(path)
 
-    # Define prefixes and plot colors
+    # Define prefixes and colors
     prefixes = ['crude_incidence', 'adjusted1', 'adjusted2', 'adjusted3']
     colors = ['blue', 'green', 'orange', 'red']
 
-    # Extract all available years from columns like crude_incidence_YYYY
+    # Get list of years from column names
     pattern = re.compile(r'^crude_incidence_(\d{4})$')
     years = sorted(int(pattern.match(col).group(1)) for col in df.columns if pattern.match(col))
 
-    # Loop through each district (adm1)
+    # Loop through each district (adm1 = FIRST_DNAM)
     for district in df['FIRST_DNAM'].dropna().unique():
         df_district = df[df['FIRST_DNAM'] == district]
-        chiefdoms = df_district['adm3'].dropna().unique()
+        chiefdoms = df_district['FIRST_CHIE'].dropna().unique()
         n = len(chiefdoms)
 
         n_cols = 3
@@ -710,24 +709,33 @@ def epi_trends(path, output_folder='epi_lineplots'):
             ax = axes[i]
             row = df_district[df_district['FIRST_CHIE'] == chiefdom]
 
+            if row.empty:
+                ax.set_title(f"{chiefdom} (No data)")
+                ax.axis("off")
+                continue
+
             for prefix, color in zip(prefixes, colors):
                 cols = [f"{prefix}_{year}" for year in years if f"{prefix}_{year}" in row.columns]
-                if not cols:
-                    continue
                 values = row[cols].values.flatten()
+
+                if len(values) != len(years) or all(pd.isna(values)):
+                    continue  # Skip if no valid data
+
                 ax.plot(years, values, marker='o', label=prefix.replace('_', ' ').title(), color=color)
 
             ax.set_title(chiefdom, fontsize=10)
             ax.grid(True)
             ax.tick_params(axis='x', rotation=45)
 
-        # Turn off any unused subplot axes
+        # Turn off unused axes
         for j in range(i + 1, len(axes)):
             axes[j].axis("off")
 
         # Shared legend
         handles, labels = axes[0].get_legend_handles_labels()
-        fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4)
+        if handles:
+            fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4)
+
         fig.suptitle(f"Incidence Trends by Chiefdom - {district}", fontsize=14)
         plt.tight_layout(rect=[0, 0.05, 1, 0.95])
 
@@ -737,8 +745,6 @@ def epi_trends(path, output_folder='epi_lineplots'):
         print(f"[Saved] {filename}")
 
     return df
-
-
 ## 
 import os
 import pandas as pd
