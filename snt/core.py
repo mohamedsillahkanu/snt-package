@@ -632,7 +632,7 @@ def subplots(epi_data_path, shapefile_path):
     norm = BoundaryNorm(bins, cmap.N)
     
     for prefix in prefixes:
-        pattern = re.compile(f"^{re.escape(prefix)}(\\d{{4}})$")
+        pattern = re.compile(f"^{re.escape(prefix)}(\\d{4})$")
         columns = [(col, pattern.match(col).group(1)) for col in gdf.columns if pattern.match(col)]
         
         if not columns:
@@ -641,36 +641,31 @@ def subplots(epi_data_path, shapefile_path):
             
         columns.sort(key=lambda x: x[1])
         
-        # Create a 3x3 grid
-        fig, axes = plt.subplots(3, 3, figsize=(12, 10))
+        fig, axes = plt.subplots(3, 3, figsize=(13, 10))
         axes = axes.flatten()
         
-        # Hide any unused axes
-        for i in range(len(columns), 9):
-            axes[i].set_visible(False)
+        for i in range(9):
+            if i >= len(columns):
+                axes[i].axis("off")
         
         for i, ((col, year), ax) in enumerate(zip(columns, axes)):
             gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5, ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
             gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
+            ax.set_title(year, fontsize=12)
+            ax.axis("off")
             
+            # Legend for this specific map
             data = gdf[col].dropna()
             counts, _ = np.histogram(data, bins=bins)
             legend_labels = [f"{label} ({count})" for label, count in zip(labels, counts)]
-            ax.set_title(year, fontsize=14)
-            ax.axis("off")
-        
-        # Create legend on the right side center
-        legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
-        fig.legend(handles=legend_items, loc='center right', bbox_to_anchor=(1.15, 0.5), fontsize=10, title="Cases per 1000")
-        
+            legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
+            ax.legend(handles=legend_items, loc='lower left', fontsize=6, title="per 1000", title_fontsize=7)
+
         plt.tight_layout()
         output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         print(f"[Saved] {output_path}")
-
-
-
 
 ## Line plots
 import matplotlib.pyplot as plt
