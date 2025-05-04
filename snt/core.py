@@ -480,18 +480,31 @@ def epi_stratification(
         if not all(col in data.columns for col in [conf_col, test_col, pop_col, pres_col, conf_RR_col]):
             continue
 
+        # Test positivity rate (as proportion)
         data[f'TPR_{year}'] = data[conf_col].div(data[test_col])
-        data[f'crude_incidence_{year}'] = data[conf_col].div(data[pop_col]).mul(1000)
-        data[f'presumed_adjusted_case_{year}'] = data[conf_col].add(data[pres_col].mul(data[f'TPR_{year}']))
-        data[f'adjusted1_{year}'] = data[f'presumed_adjusted_case_{year}'].div(data[pop_col]).mul(1000)
-        data[f'presumed_adjusted_case_RR_{year}'] = data[f'presumed_adjusted_case_{year}'].div(data[conf_RR_col])
-        data[f'adjusted2_{year}'] = data[f'presumed_adjusted_case_RR_{year}'].div(data[pop_col]).mul(1000)
-        data[f'adjusted3_{year}'] = (
-            data[f'adjusted2_{year}']
-            .add(data[f'adjusted2_{year}'].mul(data['CSpr']).div(data['CSpu']))
-            .add(data[f'adjusted2_{year}'].mul(data['CSn']).div(data['CSpu']))
-            .div(data[pop_col])
-            .mul(1000)
+    
+        # Crude incidence rate per 1000 population
+        data[f'crude_incidence_{year}'] = data[conf_col].div(data[pop_col]) * 1000
+    
+        # Calculate N1 (adjusted for presumed cases)
+        data[f'N1_{year}'] = data[conf_col] + (data[pres_col] * data[f'TPR_{year}'])
+    
+        # Calculate N2 (adjusted for reporting rate)
+        data[f'N2_{year}'] = data[f'N1_{year}'].div(data[conf_RR_col])
+    
+        # Calculate private facility adjustment
+        private_adjustment = (data[f'N2_{year}'] * data['CSpr']).div(data['CSpu'])
+    
+        # Calculate non-facility adjustment
+        non_facility_adjustment = (data[f'N2_{year}'] * data['CSn']).div(data['CSpu'])
+    
+        # Calculate N3 (total adjusted cases)
+        data[f'N3_{year}'] = data[f'N2_{year}'] + private_adjustment + non_facility_adjustment
+    
+        # Calculate adjusted incidence rates per 1000 population
+        data[f'adjusted1_{year}'] = data[f'N1_{year}'].div(data[pop_col]) * 1000
+        data[f'adjusted2_{year}'] = data[f'N2_{year}'].div(data[pop_col]) * 1000
+        data[f'adjusted3_{year}'] = data[f'N3_{year}'].div(data[pop_col]) * 1000
         )
 
     # Summary stats
