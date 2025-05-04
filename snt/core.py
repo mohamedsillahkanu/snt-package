@@ -756,40 +756,98 @@ def epi_trends(path, output_folder='epi_lineplots'):
 ##
 import os
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 from docx import Document
 from docx.shared import Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TABLE_ALIGNMENT
 import datetime
-import openai
 
-# Set your OpenAI API key directly
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# REMOVE AI CALLS
 
-def ask_gpt_for_interpretation(prompt):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=200,
-            temperature=0.7
-        )
-        return response['choices'][0]['message']['content'].strip()
-    except Exception as e:
-        print(f"[Warning] AI interpretation failed: {e}")
-        return "AI interpretation not available."
-
-def add_figure(doc, image_path, caption, fig_num, ai_prompt=None):
+def add_figure(doc, image_path, caption, fig_num):
     doc.add_page_break()
     doc.add_heading(f"Figure {fig_num}", level=2)
     doc.add_picture(image_path, width=Inches(6))
     last_paragraph = doc.paragraphs[-1]
     last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     doc.add_paragraph(f"Figure {fig_num}: {caption}", style='Caption')
-    if ai_prompt:
-        ai_text = ask_gpt_for_interpretation(ai_prompt)
-        doc.add_paragraph(f"**AI Interpretation:** {ai_text}")
+
+def compute_slope(values, years):
+    if len(values) < 2:
+        return 0
+    x = np.array(years)
+    y = np.array(values)
+    return np.polyfit(x, y, 1)[0]
+
+def summarize_chiefdom_trends(df, district_name):
+    years = [int(col.split('_')[-1]) for col in df.columns if col.startswith('crude_incidence_')]
+    years = sorted(set(years))
+    results = []
+
+    for chiefdom in df[df['FIRST_DNAM'] == district_name]['FIRST_CHIE'].unique():
+        row = df[df['FIRST_CHIE'] == chiefdom].iloc[0]
+
+        summary = {'Chiefdom': chiefdom}
+        for prefix in ['crude_incidence', 'adjusted1', 'adjusted2', 'adjusted3']:
+            cols = [f"{prefix}_{y}" for y in years if f"{prefix}_{y}" in row]
+            values = [row[c] for c in cols]
+            slope = compute_slope(values, years)
+            trend = (
+                "increasing" if slope > 5 else
+                "decreasing" if slope < -5 else
+                "stable"
+            )
+            summary[prefix] = trend
+        results.append(summary)
+
+    return pd.DataFrame(results)
+
+def interpret_district_trends(summary_df):
+    output = []
+    for prefix in ['crude_incidence', 'adjusted1', 'adjusted2', 'adjusted3']:
+        counts = summary_df[prefix].value_counts()
+        increasing = counts.get('increasing', 0)
+        decreasing = counts.get('decreasing', 0)
+        stable = counts.get('stable', 0)
+
+        statement = (
+            f"{prefix.replace('_', ' ').title()}: "
+            f"{increasing} increasing, {decreasing} decreasing, {stable} stable."
+        )
+        if increasing > decreasing:
+            statement += " Rising transmission may require urgent attention."
+        elif decreasing > increasing:
+            statement += " This reflects progress in control efforts."
+        else:
+            statement += " Trends appear mixed."
+
+        output.append(statement)
+    return output
+
+def add_trend_summary_table(doc, trend_df):
+    doc.add_heading("Chiefdom-Level Trend Summary Table", level=2)
+    doc.add_paragraph("This table summarizes the trend direction for each incidence indicator across chiefdoms in the selected district.")
+
+    table = doc.add_table(rows=1, cols=5)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.style = 'Table Grid'
+
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = "Chiefdom"
+    hdr_cells[1].text = "Crude Incidence"
+    hdr_cells[2].text = "Adjusted1"
+    hdr_cells[3].text = "Adjusted2"
+    hdr_cells[4].text = "Adjusted3"
+
+    for _, row in trend_df.iterrows():
+        cells = table.add_row().cells
+        cells[0].text = str(row['Chiefdom'])
+        cells[1].text = row['crude_incidence']
+        cells[2].text = row['adjusted1']
+        cells[3].text = row['adjusted2']
+        cells[4].text = row['adjusted3']
 
 def export_and_interpret(
     path,
@@ -827,88 +885,22 @@ def export_and_interpret(
         "5. Statistical summary and interpretation of findings"
     )
 
-    def generate_dynamic_interpretations(df):
-        interpretations = {}
-        summary_stats = {}
+    trend_df = summarize_chiefdom_trends(epi_data, "KAILAHUN")
+    trend_summary = interpret_district_trends(trend_df)
 
-        for prefix in ["crude_incidence_", "adjusted1_", "adjusted2_", "adjusted3_"]:
-            incidence_cols = [col for col in df.columns if col.startswith(prefix) and col.replace(prefix, "").isdigit()]
-            if not incidence_cols:
-                continue
+    doc.add_heading("Trend Summary by Chiefdom", level=1)
+    for s in trend_summary:
+        doc.add_paragraph(s)
 
-            max_vals = df[incidence_cols].max(axis=1)
-            low = (max_vals < 250).sum()
-            moderate = ((max_vals >= 250) & (max_vals <= 450)).sum()
-            high = (max_vals > 450).sum()
-            total = len(max_vals)
-
-            pct_low = low / total * 100
-            pct_moderate = moderate / total * 100
-            pct_high = high / total * 100
-
-            type_name = prefix.rstrip("_").replace("_", " ").title()
-            summary_stats[type_name] = {
-                "Low": pct_low,
-                "Moderate": pct_moderate,
-                "High": pct_high
-            }
-
-            interpretation = f"{type_name} analysis shows that approximately {pct_high:.1f}% of chiefdoms experience high transmission (>450), " \
-                             f"{pct_moderate:.1f}% moderate (250–450), and {pct_low:.1f}% low (<250). "
-
-            if pct_high > 40:
-                interpretation += "This indicates a critical need for intensified malaria control interventions in a significant proportion of areas."
-            elif pct_moderate > 50:
-                interpretation += "Moderate burden dominates, suggesting targeted scale-up of prevention and treatment may yield high impact."
-            else:
-                interpretation += "Most areas are experiencing low or moderate transmission, providing an opportunity to push toward elimination in specific regions."
-
-            interpretations[type_name] = interpretation
-
-        return pd.DataFrame(summary_stats).T, interpretations
-
-    df_summary, dynamic_interps = generate_dynamic_interpretations(epi_data)
-
-    doc.add_heading("Transmission Intensity Summary", level=1)
-    doc.add_paragraph(
-        "This section summarizes the percentage of chiefdoms with low, moderate, and high malaria transmission. "
-        "These statistics are based on the highest annual incidence observed per chiefdom."
-    )
-
-    table = doc.add_table(rows=1, cols=4)
-    table.style = 'Table Grid'
-    hdr = table.rows[0].cells
-    hdr[0].text = "Incidence Type"
-    hdr[1].text = "Low (%)"
-    hdr[2].text = "Moderate (%)"
-    hdr[3].text = "High (%)"
-
-    for index, row in df_summary.iterrows():
-        cells = table.add_row().cells
-        cells[0].text = index
-        cells[1].text = f"{row['Low']:.1f}"
-        cells[2].text = f"{row['Moderate']:.1f}"
-        cells[3].text = f"{row['High']:.1f}"
-
-    doc.add_heading("Interpretation and Recommendations", level=1)
-    for inc_type, text in dynamic_interps.items():
-        doc.add_heading(inc_type, level=2)
-        doc.add_paragraph(text)
+    add_trend_summary_table(doc, trend_df)
 
     fig_num = 1
-
     doc.add_heading("Spatial Distribution Maps", level=1)
     for prefix in ["crude_incidence", "adjusted1", "adjusted2", "adjusted3"]:
         subplot_path = os.path.join(subplots_folder, f"{prefix}_maps.png")
         if os.path.exists(subplot_path):
             caption = f"{prefix.replace('_', ' ').title()} spatial distribution across chiefdoms"
-            ai_prompt = (
-                f"You are analyzing a spatial distribution map for malaria. "
-                f"This map shows {prefix.replace('_', ' ')} across chiefdoms in Sierra Leone "
-                f"over multiple years. Describe the spatial patterns of high and low incidence, "
-                f"and infer what it suggests about malaria burden and control priorities."
-            )
-            add_figure(doc, subplot_path, caption, fig_num, ai_prompt)
+            add_figure(doc, subplot_path, caption, fig_num)
             fig_num += 1
 
     doc.add_heading("Temporal Trends", level=1)
@@ -916,18 +908,10 @@ def export_and_interpret(
         for file in sorted(Path(trends_folder).glob("*.png")):
             district_name = file.stem
             caption = f"Trend of incidence indicators in {district_name}"
-            ai_prompt = (
-                f"This line plot shows malaria incidence trends (crude and adjusted) over time in {district_name}. "
-                f"Interpret the patterns across indicators and years. Discuss what the trends suggest about transmission dynamics and control efforts."
-            )
-            add_figure(doc, str(file), caption, fig_num, ai_prompt)
+            add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")
-
-
-
-
