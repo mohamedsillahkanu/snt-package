@@ -752,7 +752,8 @@ def epi_trends(path, output_folder='epi_lineplots'):
         print(f"[Saved] {filename}")
 
     return df
-## 
+
+##
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -761,6 +762,34 @@ from docx import Document
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import datetime
+import openai
+
+# Set your OpenAI API key directly
+openai.api_key = "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"
+
+def ask_gpt_for_interpretation(prompt):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=200,
+            temperature=0.7
+        )
+        return response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        print(f"[Warning] AI interpretation failed: {e}")
+        return "AI interpretation not available."
+
+def add_figure(doc, image_path, caption, fig_num, ai_prompt=None):
+    doc.add_page_break()
+    doc.add_heading(f"Figure {fig_num}", level=2)
+    doc.add_picture(image_path, width=Inches(6))
+    last_paragraph = doc.paragraphs[-1]
+    last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"Figure {fig_num}: {caption}", style='Caption')
+    if ai_prompt:
+        ai_text = ask_gpt_for_interpretation(ai_prompt)
+        doc.add_paragraph(f"**AI Interpretation:** {ai_text}")
 
 def export_and_interpret(
     path,
@@ -774,13 +803,11 @@ def export_and_interpret(
     epi_data = pd.read_excel(path)
     doc = Document()
 
-    # Title and author
     doc.add_heading(report_title, level=0)
     p = doc.add_paragraph()
     p.add_run(f"Prepared by: {author}").bold = True
     p.add_run(f"\nDate: {datetime.datetime.now().strftime('%B %d, %Y')}")
 
-    # Introduction
     doc.add_heading("Introduction", level=1)
     doc.add_paragraph(
         "This report presents the results of malaria epidemiological analysis using routine "
@@ -790,7 +817,6 @@ def export_and_interpret(
         "the findings."
     )
 
-    # Methods
     doc.add_heading("Methods", level=1)
     doc.add_paragraph(
         "The analysis workflow involved several steps:\n"
@@ -801,7 +827,6 @@ def export_and_interpret(
         "5. Statistical summary and interpretation of findings"
     )
 
-    # Interpretation summary
     def generate_dynamic_interpretations(df):
         interpretations = {}
         summary_stats = {}
@@ -844,7 +869,6 @@ def export_and_interpret(
 
     df_summary, dynamic_interps = generate_dynamic_interpretations(epi_data)
 
-    # Transmission Summary Table
     doc.add_heading("Transmission Intensity Summary", level=1)
     doc.add_paragraph(
         "This section summarizes the percentage of chiefdoms with low, moderate, and high malaria transmission. "
@@ -866,46 +890,44 @@ def export_and_interpret(
         cells[2].text = f"{row['Moderate']:.1f}"
         cells[3].text = f"{row['High']:.1f}"
 
-    # Dynamic interpretation
     doc.add_heading("Interpretation and Recommendations", level=1)
     for inc_type, text in dynamic_interps.items():
         doc.add_heading(inc_type, level=2)
         doc.add_paragraph(text)
 
-    # Helper to insert figures
-    def add_figure(doc, image_path, caption, fig_num):
-        doc.add_page_break()
-        doc.add_heading(f"Figure {fig_num}", level=2)
-        doc.add_picture(image_path, width=Inches(6))
-        last_paragraph = doc.paragraphs[-1]
-        last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        doc.add_paragraph(f"Figure {fig_num}: {caption}", style='Caption')
-
     fig_num = 1
 
-    # Add subplots
     doc.add_heading("Spatial Distribution Maps", level=1)
     for prefix in ["crude_incidence", "adjusted1", "adjusted2", "adjusted3"]:
         subplot_path = os.path.join(subplots_folder, f"{prefix}_maps.png")
         if os.path.exists(subplot_path):
             caption = f"{prefix.replace('_', ' ').title()} spatial distribution across chiefdoms"
-            add_figure(doc, subplot_path, caption, fig_num)
+            ai_prompt = (
+                f"You are analyzing a spatial distribution map for malaria. "
+                f"This map shows {prefix.replace('_', ' ')} across chiefdoms in Sierra Leone "
+                f"over multiple years. Describe the spatial patterns of high and low incidence, "
+                f"and infer what it suggests about malaria burden and control priorities."
+            )
+            add_figure(doc, subplot_path, caption, fig_num, ai_prompt)
             fig_num += 1
 
-    # Add trend line plots
     doc.add_heading("Temporal Trends", level=1)
     if os.path.exists(trends_folder):
         for file in sorted(Path(trends_folder).glob("*.png")):
-            caption = f"Trend of incidence indicators in {file.stem}"
-            add_figure(doc, str(file), caption, fig_num)
+            district_name = file.stem
+            caption = f"Trend of incidence indicators in {district_name}"
+            ai_prompt = (
+                f"This line plot shows malaria incidence trends (crude and adjusted) over time in {district_name}. "
+                f"Interpret the patterns across indicators and years. Discuss what the trends suggest about transmission dynamics and control efforts."
+            )
+            add_figure(doc, str(file), caption, fig_num, ai_prompt)
             fig_num += 1
 
-    # Save
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
-    print(f"✅ Report saved to: {output_file}")
-    return output_file
+    print(f"\n✅ Report saved to: {output_file}")
+
 
 
 
