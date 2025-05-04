@@ -445,7 +445,6 @@ def epi_stratification(
             .replace([np.inf, -np.inf], 0)
             .fillna(0)
             .round(2)
-            .mul(100)
         )
         reporting_stats_by_year.append(stats)
 
@@ -615,7 +614,7 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from matplotlib.colors import BoundaryNorm
-from matplotlib.patches import Patch
+from matplotlib.cm import ScalarMappable
 import numpy as np
 
 def subplots(epi_data_path, shapefile_path):
@@ -632,7 +631,7 @@ def subplots(epi_data_path, shapefile_path):
     norm = BoundaryNorm(bins, cmap.N)
     
     for prefix in prefixes:
-        pattern = re.compile(f"^{re.escape(prefix)}(\\d{4})$")
+        pattern = re.compile(f"^{re.escape(prefix)}(\\d{{4}})$")
         columns = [(col, pattern.match(col).group(1)) for col in gdf.columns if pattern.match(col)]
         
         if not columns:
@@ -641,32 +640,43 @@ def subplots(epi_data_path, shapefile_path):
             
         columns.sort(key=lambda x: x[1])
         
-        fig, axes = plt.subplots(3, 3, figsize=(13, 10))
+        # Create a 3x3 grid with more space for legends
+        fig, axes = plt.subplots(3, 3, figsize=(15, 13))
         axes = axes.flatten()
         
-        for i in range(9):
-            if i >= len(columns):
-                axes[i].axis("off")
+        # Hide any unused axes
+        for i in range(len(columns), 9):
+            axes[i].set_visible(False)
         
         for i, ((col, year), ax) in enumerate(zip(columns, axes)):
+            # Plot the data
             gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5, ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
             gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
-            ax.set_title(year, fontsize=12)
-            ax.axis("off")
             
-            # Legend for this specific map
+            # Count data points in each bin for this specific column
             data = gdf[col].dropna()
             counts, _ = np.histogram(data, bins=bins)
+            
+            # Create legend for this specific subplot
+            sm = ScalarMappable(cmap=cmap, norm=norm)
+            sm.set_array([])
+            
+            # Add legend with counts
             legend_labels = [f"{label} ({count})" for label, count in zip(labels, counts)]
-            legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
-            ax.legend(handles=legend_items, loc='lower left', fontsize=6, title="per 1000", title_fontsize=7)
-
+            cbar = fig.colorbar(sm, ax=ax, shrink=0.7, pad=0.05)
+            cbar.set_ticks([(bins[i] + bins[i+1])/2 for i in range(len(bins)-1)])
+            cbar.set_ticklabels(legend_labels)
+            cbar.ax.tick_params(labelsize=8)
+            
+            ax.set_title(year, fontsize=14)
+            ax.axis("off")
+        
         plt.tight_layout()
         output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         print(f"[Saved] {output_path}")
-
+        
 ## Line plots
 import matplotlib.pyplot as plt
 import pandas as pd
