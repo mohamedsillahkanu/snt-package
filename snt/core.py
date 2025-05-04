@@ -695,8 +695,8 @@ def epi_trends(path, output_folder='epi_lineplots'):
     years = sorted(int(pattern.match(col).group(1)) for col in df.columns if pattern.match(col))
 
     # Loop through each district (adm1)
-    for district in df['adm1'].dropna().unique():
-        df_district = df[df['adm1'] == district]
+    for district in df['FIRST_DNAM'].dropna().unique():
+        df_district = df[df['FIRST_DNAM'] == district]
         chiefdoms = df_district['adm3'].dropna().unique()
         n = len(chiefdoms)
 
@@ -708,7 +708,7 @@ def epi_trends(path, output_folder='epi_lineplots'):
 
         for i, chiefdom in enumerate(chiefdoms):
             ax = axes[i]
-            row = df_district[df_district['adm3'] == chiefdom]
+            row = df_district[df_district['FIRST_CHIE'] == chiefdom]
 
             for prefix, color in zip(prefixes, colors):
                 cols = [f"{prefix}_{year}" for year in years if f"{prefix}_{year}" in row.columns]
