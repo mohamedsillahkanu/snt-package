@@ -505,7 +505,7 @@ def epi_stratification(
         data[f'adjusted1_{year}'] = data[f'N1_{year}'].div(data[pop_col]) * 1000
         data[f'adjusted2_{year}'] = data[f'N2_{year}'].div(data[pop_col]) * 1000
         data[f'adjusted3_{year}'] = data[f'N3_{year}'].div(data[pop_col]) * 1000
-        )
+        
 
     # Summary stats
     for prefix in ['adjusted1', 'adjusted2', 'adjusted3']:
