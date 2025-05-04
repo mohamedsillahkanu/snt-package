@@ -622,7 +622,7 @@ def subplots(epi_data_path):
     os.makedirs("subplots", exist_ok=True)
     
     df1 = pd.read_excel(epi_data_path)
-    gdf_shape = gpd.read_file("")
+    gdf_shape = gpd.read_file("input_files/routine/shapefile/Chiefdom2021.shp")
     gdf = gdf_shape.merge(df1, on=["FIRST_DNAM", "FIRST_CHIE"], how="left", validate="1:1")
     
     bins = [0, 50, 100, 250, 450, 700, 1000, float("inf")]
