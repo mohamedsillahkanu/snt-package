@@ -761,10 +761,9 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from docx import Document
 from docx.shared import Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_TABLE_ALIGNMENT
 import datetime
 
-# REMOVE AI CALLS
 
 def add_figure(doc, image_path, caption, fig_num):
     doc.add_page_break()
