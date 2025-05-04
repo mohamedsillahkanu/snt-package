@@ -679,14 +679,13 @@ from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import datetime
 
-def export_and_interpret(
-    df,
+def export_and_interpret(path,
     report_folder="final_report",
     report_title="Malaria Epidemiological Analysis Report",
     author="Malaria Surveillance Team"
 ):
     os.makedirs(report_folder, exist_ok=True)
-    epi_data = df.copy()
+    epi_data = pd.read_excel(path)
     doc = Document()
 
     # Title and author
