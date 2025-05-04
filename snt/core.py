@@ -608,13 +608,14 @@ def individual_plots(epi_data_path,
 
 
 # Subplots
+# Subplots
 import os
 import re
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from matplotlib.colors import BoundaryNorm
-from matplotlib.cm import ScalarMappable
+from matplotlib.patches import Patch
 import numpy as np
 
 def subplots(epi_data_path, shapefile_path):
@@ -640,8 +641,8 @@ def subplots(epi_data_path, shapefile_path):
             
         columns.sort(key=lambda x: x[1])
         
-        # Create a 3x3 grid with more space for legends
-        fig, axes = plt.subplots(3, 3, figsize=(15, 13))
+        # Create a 3x3 grid
+        fig, axes = plt.subplots(3, 3, figsize=(12, 10))
         axes = axes.flatten()
         
         # Hide any unused axes
@@ -649,27 +650,18 @@ def subplots(epi_data_path, shapefile_path):
             axes[i].set_visible(False)
         
         for i, ((col, year), ax) in enumerate(zip(columns, axes)):
-            # Plot the data
             gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5, ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
             gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
             
-            # Count data points in each bin for this specific column
             data = gdf[col].dropna()
             counts, _ = np.histogram(data, bins=bins)
-            
-            # Create legend for this specific subplot
-            sm = ScalarMappable(cmap=cmap, norm=norm)
-            sm.set_array([])
-            
-            # Add legend with counts
             legend_labels = [f"{label} ({count})" for label, count in zip(labels, counts)]
-            cbar = fig.colorbar(sm, ax=ax, shrink=0.7, pad=0.05)
-            cbar.set_ticks([(bins[i] + bins[i+1])/2 for i in range(len(bins)-1)])
-            cbar.set_ticklabels(legend_labels)
-            cbar.ax.tick_params(labelsize=8)
-            
             ax.set_title(year, fontsize=14)
             ax.axis("off")
+        
+        # Create legend on the right side center
+        legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
+        fig.legend(handles=legend_items, loc='center right', bbox_to_anchor=(1.15, 0.5), fontsize=10, title="Cases per 1000")
         
         plt.tight_layout()
         output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
