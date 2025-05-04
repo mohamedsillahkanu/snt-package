@@ -641,7 +641,7 @@ def subplots(epi_data_path):
         columns.sort(key=lambda x: x[1])
         
         # Create a 3x3 grid
-        fig, axes = plt.subplots(3, 3, figsize=(15, 12))
+        fig, axes = plt.subplots(3, 3, figsize=(15, 15))
         axes = axes.flatten()
 
         # Hide any unused axes
@@ -658,7 +658,7 @@ def subplots(epi_data_path):
 
             ax.set_title(year, fontsize=12)
             ax.axis("off")
-            legend = ax.legend(handles=legend_items, fontsize=8, title="Cases/1000", loc='lower left', frameon=True)
+            legend = ax.legend(handles=legend_items, fontsize=8, title="Cases/1000", loc='center right', frameon=True)
         
         plt.tight_layout()
         output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
