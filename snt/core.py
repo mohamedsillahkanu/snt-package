@@ -607,8 +607,7 @@ def individual_plots(epi_data_path,
         plt.close()
 
 
-# Subplots
-# Subplots
+## Subplots
 import os
 import re
 import pandas as pd
@@ -618,50 +617,48 @@ from matplotlib.colors import BoundaryNorm
 from matplotlib.patches import Patch
 import numpy as np
 
-def subplots(epi_data_path, shapefile_path):
+def subplots(epi_data_path):
     prefixes = ['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_']
     os.makedirs("subplots", exist_ok=True)
     
     df1 = pd.read_excel(epi_data_path)
-    gdf_shape = gpd.read_file(shapefile_path)
+    gdf_shape = gpd.read_file("")
     gdf = gdf_shape.merge(df1, on=["FIRST_DNAM", "FIRST_CHIE"], how="left", validate="1:1")
     
     bins = [0, 50, 100, 250, 450, 700, 1000, float("inf")]
     labels = ['<50', '50-100', '100-250', '250-450', '450-700', '700-1000', '>1000']
     cmap = plt.cm.get_cmap("RdYlBu_r", len(bins)-1)
     norm = BoundaryNorm(bins, cmap.N)
-    
+
     for prefix in prefixes:
         pattern = re.compile(f"^{re.escape(prefix)}(\\d{{4}})$")
         columns = [(col, pattern.match(col).group(1)) for col in gdf.columns if pattern.match(col)]
-        
+
         if not columns:
             print(f"[Skipped] No columns found for prefix '{prefix}'")
             continue
-            
+
         columns.sort(key=lambda x: x[1])
         
         # Create a 3x3 grid
-        fig, axes = plt.subplots(3, 3, figsize=(12, 10))
+        fig, axes = plt.subplots(3, 3, figsize=(15, 12))
         axes = axes.flatten()
-        
+
         # Hide any unused axes
         for i in range(len(columns), 9):
             axes[i].set_visible(False)
-        
+
         for i, ((col, year), ax) in enumerate(zip(columns, axes)):
             gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5, ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
             gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
-            
             data = gdf[col].dropna()
             counts, _ = np.histogram(data, bins=bins)
             legend_labels = [f"{label} ({count})" for label, count in zip(labels, counts)]
-            ax.set_title(year, fontsize=14)
+            legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
+
+            ax.set_title(year, fontsize=12)
             ax.axis("off")
-        
-        # Create legend on the right side center
-        legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
-        fig.legend(handles=legend_items, loc='center right', bbox_to_anchor=(1.15, 0.5), fontsize=10, title="Cases per 1000")
+            legend = ax.legend(handles=legend_items, fontsize=8, title="Cases/1000", loc='lower left', frameon=True)
         
         plt.tight_layout()
         output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
