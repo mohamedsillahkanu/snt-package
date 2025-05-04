@@ -765,7 +765,7 @@ import datetime
 import openai
 
 # Set your OpenAI API key directly
-openai.api_key = "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"
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def ask_gpt_for_interpretation(prompt):
     try:
