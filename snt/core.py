@@ -670,6 +670,76 @@ def subplots(epi_data_path, shapefile_path):
         print(f"[Saved] {output_path}")
 
 
+
+
+# Line plots
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import re
+import os
+
+def epi_trends(path, output_folder='epi_lineplots'):
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Read the Excel file
+    df = pd.read_excel(path)
+
+    # Define prefixes and plot colors
+    prefixes = ['crude_incidence', 'adjusted1', 'adjusted2', 'adjusted3']
+    colors = ['blue', 'green', 'orange', 'red']
+
+    # Extract all available years from columns like crude_incidence_YYYY
+    pattern = re.compile(r'^crude_incidence_(\d{4})$')
+    years = sorted(int(pattern.match(col).group(1)) for col in df.columns if pattern.match(col))
+
+    # Loop through each district (adm1)
+    for district in df['adm1'].dropna().unique():
+        df_district = df[df['adm1'] == district]
+        chiefdoms = df_district['adm3'].dropna().unique()
+        n = len(chiefdoms)
+
+        n_cols = 3
+        n_rows = int(np.ceil(n / n_cols))
+
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), sharex=True, sharey=True)
+        axes = axes.flatten()
+
+        for i, chiefdom in enumerate(chiefdoms):
+            ax = axes[i]
+            row = df_district[df_district['adm3'] == chiefdom]
+
+            for prefix, color in zip(prefixes, colors):
+                cols = [f"{prefix}_{year}" for year in years if f"{prefix}_{year}" in row.columns]
+                if not cols:
+                    continue
+                values = row[cols].values.flatten()
+                ax.plot(years, values, marker='o', label=prefix.replace('_', ' ').title(), color=color)
+
+            ax.set_title(chiefdom, fontsize=10)
+            ax.grid(True)
+            ax.tick_params(axis='x', rotation=45)
+
+        # Turn off any unused subplot axes
+        for j in range(i + 1, len(axes)):
+            axes[j].axis("off")
+
+        # Shared legend
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4)
+        fig.suptitle(f"Incidence Trends by Chiefdom - {district}", fontsize=14)
+        plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+
+        filename = os.path.join(output_folder, f"{district}_trends.png")
+        plt.savefig(filename, dpi=300)
+        plt.close()
+        print(f"[Saved] {filename}")
+
+    return df
+
+
+## 
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
