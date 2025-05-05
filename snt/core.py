@@ -652,32 +652,33 @@ def subplots(epi_data_path):
             continue
 
         columns.sort(key=lambda x: x[1])
-        
-        # Create a 3x3 grid
-        fig, axes = plt.subplots(3, 3, figsize=(15, 15))
+
+        # Create a 3x3 grid of subplots (max 9)
+        fig, axes = plt.subplots(3, 3, figsize=(12, 12))  # Reduced overall size
         axes = axes.flatten()
 
-        # Hide any unused axes
         for i in range(len(columns), 9):
             axes[i].set_visible(False)
 
         for i, ((col, year), ax) in enumerate(zip(columns, axes)):
             gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5, ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
             gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
+
             data = gdf[col].dropna()
             counts, _ = np.histogram(data, bins=bins)
             legend_labels = [f"{label} ({count})" for label, count in zip(labels, counts)]
             legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
 
-            ax.set_title(year, fontsize=12)
+            ax.set_title(year, fontsize=11)
             ax.axis("off")
-            legend = ax.legend(handles=legend_items, fontsize=8, title="Cases/1000", loc='center right', frameon=True)
-        
-        plt.tight_layout()
+            legend = ax.legend(handles=legend_items, fontsize=7, title="Cases/1000", loc='lower left', frameon=True)
+
+        plt.subplots_adjust(wspace=0.1, hspace=0.2)  # More spacing between plots
         output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         print(f"[Saved] {output_path}")
+
         
 ## Line plots
 import matplotlib.pyplot as plt
@@ -780,33 +781,37 @@ def compute_slope(values, years):
     y = np.array(values)
     return np.polyfit(x, y, 1)[0]
 
-def summarize_chiefdom_trends(df, district_name):
+def summarize_all_district_trends(df):
     years = [int(col.split('_')[-1]) for col in df.columns if col.startswith('crude_incidence_')]
     years = sorted(set(years))
     results = []
 
-    for chiefdom in df[df['FIRST_DNAM'] == district_name]['FIRST_CHIE'].unique():
-        row = df[df['FIRST_CHIE'] == chiefdom].iloc[0]
+    for district in df['FIRST_DNAM'].unique():
+        chiefdoms = df[df['FIRST_DNAM'] == district]['FIRST_CHIE'].unique()
 
-        summary = {'Chiefdom': chiefdom}
-        for prefix in ['crude_incidence', 'adjusted1', 'adjusted2', 'adjusted3']:
-            cols = [f"{prefix}_{y}" for y in years if f"{prefix}_{y}" in row]
-            values = [row[c] for c in cols]
-            slope = compute_slope(values, years)
-            trend = (
-                "increasing" if slope > 5 else
-                "decreasing" if slope < -5 else
-                "stable"
-            )
-            summary[prefix] = trend
-        results.append(summary)
+        for chiefdom in chiefdoms:
+            row = df[(df['FIRST_DNAM'] == district) & (df['FIRST_CHIE'] == chiefdom)].iloc[0]
+
+            summary = {'District': district, 'Chiefdom': chiefdom}
+            for prefix in ['crude_incidence', 'adjusted1', 'adjusted2', 'adjusted3']:
+                cols = [f"{prefix}_{y}" for y in years if f"{prefix}_{y}" in row]
+                values = [row[c] for c in cols]
+                slope = compute_slope(values, years)
+                trend = (
+                    "increasing" if slope > 5 else
+                    "decreasing" if slope < -5 else
+                    "stable"
+                )
+                summary[prefix] = trend
+            results.append(summary)
 
     return pd.DataFrame(results)
 
-def interpret_district_trends(summary_df):
-    output = []
+def interpret_district_trends(summary_df, district_name):
+    output = [f"District: {district_name}"]
+    df = summary_df[summary_df['District'] == district_name]
     for prefix in ['crude_incidence', 'adjusted1', 'adjusted2', 'adjusted3']:
-        counts = summary_df[prefix].value_counts()
+        counts = df[prefix].value_counts()
         increasing = counts.get('increasing', 0)
         decreasing = counts.get('decreasing', 0)
         stable = counts.get('stable', 0)
@@ -839,9 +844,9 @@ def interpret_district_trends(summary_df):
         output.append(statement)
     return output
 
-def add_trend_summary_table(doc, trend_df):
-    doc.add_heading("Chiefdom-Level Trend Summary Table", level=2)
-    doc.add_paragraph("This table summarizes the trend direction for each incidence indicator across chiefdoms in the selected district.")
+def add_trend_summary_table(doc, trend_df, district_name):
+    doc.add_heading(f"Chiefdom-Level Trend Summary: {district_name}", level=2)
+    doc.add_paragraph("This table summarizes the trend direction for each incidence indicator across chiefdoms in the district.")
 
     table = doc.add_table(rows=1, cols=5)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -854,7 +859,7 @@ def add_trend_summary_table(doc, trend_df):
     hdr_cells[3].text = "Adjusted2"
     hdr_cells[4].text = "Adjusted3"
 
-    for _, row in trend_df.iterrows():
+    for _, row in trend_df[trend_df['District'] == district_name].iterrows():
         cells = table.add_row().cells
         cells[0].text = str(row['Chiefdom'])
         cells[1].text = row['crude_incidence']
@@ -898,14 +903,14 @@ def export_and_interpret(
         "5. Statistical summary and interpretation of findings"
     )
 
-    trend_df = summarize_chiefdom_trends(epi_data, "KAILAHUN")
-    trend_summary = interpret_district_trends(trend_df)
+    trend_df = summarize_all_district_trends(epi_data)
 
-    doc.add_heading("Trend Summary by Chiefdom", level=1)
-    for s in trend_summary:
-        doc.add_paragraph(s)
-
-    add_trend_summary_table(doc, trend_df)
+    doc.add_heading("Trend Summary by District", level=1)
+    for district in trend_df['District'].unique():
+        trend_summary = interpret_district_trends(trend_df, district)
+        for s in trend_summary:
+            doc.add_paragraph(s)
+        add_trend_summary_table(doc, trend_df, district)
 
     fig_num = 1
     doc.add_heading("Spatial Distribution Maps", level=1)
@@ -928,4 +933,3 @@ def export_and_interpret(
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")
-
