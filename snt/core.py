@@ -653,27 +653,47 @@ def subplots(epi_data_path):
 
         columns.sort(key=lambda x: x[1])
 
-        # Create a 3x3 grid of subplots (max 9)
-        fig, axes = plt.subplots(3, 3, figsize=(12, 12))  # Reduced overall size
+        fig, axes = plt.subplots(3, 3, figsize=(24, 15))
         axes = axes.flatten()
 
         for i in range(len(columns), 9):
             axes[i].set_visible(False)
 
         for i, ((col, year), ax) in enumerate(zip(columns, axes)):
-            gdf.plot(column=col, cmap=cmap, norm=norm, edgecolor='gray', linewidth=0.5, ax=ax, legend=False, missing_kwds={"color": "lightgrey"})
-            gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
+            gdf.plot(
+                column=col,
+                cmap=cmap,
+                norm=norm,
+                edgecolor='gray',
+                linewidth=0.5,
+                ax=ax,
+                legend=False,
+                missing_kwds={"color": "lightgrey"}
+            )
 
+            gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
+            ax.set_title(year, fontsize=11)
+            ax.axis("off")
+
+            # Create and add legend for each plot
             data = gdf[col].dropna()
             counts, _ = np.histogram(data, bins=bins)
             legend_labels = [f"{label} ({count})" for label, count in zip(labels, counts)]
-            legend_items = [Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab) for b, lab in zip(bins[:-1], legend_labels)]
+            legend_items = [
+                Patch(facecolor=cmap(norm(b)), edgecolor='black', label=lab)
+                for b, lab in zip(bins[:-1], legend_labels)
+            ]
 
-            ax.set_title(year, fontsize=11)
-            ax.axis("off")
-            legend = ax.legend(handles=legend_items, fontsize=7, title="Cases/1000", loc='lower left', frameon=True)
+            ax.legend(
+                handles=legend_items,
+                fontsize=7,
+                title="Cases/1000",
+                loc='center left',
+                bbox_to_anchor=(1.05, 0.5),
+                frameon=True
+            )
 
-        plt.subplots_adjust(wspace=0.1, hspace=0.2)  # More spacing between plots
+        plt.subplots_adjust(wspace=0.5, hspace=0.4, right=0.9)
         output_path = f"subplots/{prefix.rstrip('_')}_maps.png"
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
