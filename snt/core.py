@@ -852,15 +852,15 @@ def crude_trends(path, output_folder='crude_plots'):
 
 ## Adjusted1 trend
 
-def crude_trends(path, output_folder='adjusted1_plots'):
+def adjusted1_trends(path, output_folder='adjusted1_plots'):
     os.makedirs(output_folder, exist_ok=True)
 
     # Read the Excel file
     df = pd.read_excel(path)
 
     # Define prefixes and colors
-    prefixes = ['crude']
-    colors = ['blue']
+    prefixes = ['adjusted1']
+    colors = ['green']
 
     # Get list of years from column names
     pattern = re.compile(r'^adjusted1_(\d{4})$')
@@ -927,16 +927,157 @@ def crude_trends(path, output_folder='adjusted1_plots'):
 
 # Adjusted2 
 
+def adjusted2_trends(path, output_folder='adjusted2_plots'):
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Read the Excel file
+    df = pd.read_excel(path)
+
+    # Define prefixes and colors
+    prefixes = ['adjusted2']
+    colors = ['orange']
+
+    # Get list of years from column names
+    pattern = re.compile(r'^adjusted2_(\d{4})$')
+    years = sorted(int(pattern.match(col).group(1)) for col in df.columns if pattern.match(col))
+
+    # Loop through each district (adm1 = FIRST_DNAM)
+    for district in df['FIRST_DNAM'].dropna().unique():
+        df_district = df[df['FIRST_DNAM'] == district]
+        chiefdoms = df_district['FIRST_CHIE'].dropna().unique()
+        n = len(chiefdoms)
+
+        n_cols = 3
+        n_rows = int(np.ceil(n / n_cols))
+
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), sharex=True, sharey=True)
+        axes = axes.flatten()
+
+        for i, chiefdom in enumerate(chiefdoms):
+            ax = axes[i]
+            row = df_district[df_district['FIRST_CHIE'] == chiefdom]
+
+            if row.empty:
+                ax.set_title(f"{chiefdom} (No data)")
+                ax.axis("off")
+                continue
+
+            for prefix, color in zip(prefixes, colors):
+                cols = [f"{prefix}_{year}" for year in years if f"{prefix}_{year}" in row.columns]
+                values = row[cols].values.flatten()
+
+                if len(values) != len(years) or all(pd.isna(values)):
+                    continue  # Skip if no valid data
+
+                ax.plot(years, values, marker='o', label=prefix.replace('_', ' ').title(), color=color)
+
+                # Add trend line with label
+                if np.count_nonzero(~np.isnan(values)) >= 2:
+                    fit = np.polyfit(years, values, 1)
+                    trend_line = np.poly1d(fit)(years)
+                    ax.plot(years, trend_line, linestyle='--', color=color, alpha=0.7, label="Trend")
+
+            ax.set_title(chiefdom, fontsize=10)
+            ax.grid(True)
+            ax.tick_params(axis='x', rotation=45)
+
+        # Turn off unused axes
+        for j in range(i + 1, len(axes)):
+            axes[j].axis("off")
+
+        # Shared legend
+        handles, labels = axes[0].get_legend_handles_labels()
+        if handles:
+            fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4)
+
+        fig.suptitle(f"Crude Incidence Trends by Chiefdom - {district}", fontsize=14)
+        plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+
+        filename = os.path.join(output_folder, f"{district}_trends.png")
+        plt.savefig(filename, dpi=300)
+        plt.close()
+        print(f"[Saved] {filename}")
+
+    return df
+
 
 
 ### Adjusted3
 
+def adjusted3_trends(path, output_folder='adjusted3_plots'):
+    os.makedirs(output_folder, exist_ok=True)
 
+    # Read the Excel file
+    df = pd.read_excel(path)
 
+    # Define prefixes and colors
+    prefixes = ['adjusted3']
+    colors = ['red']
 
-## 
+    # Get list of years from column names
+    pattern = re.compile(r'^adjusted3_(\d{4})$')
+    years = sorted(int(pattern.match(col).group(1)) for col in df.columns if pattern.match(col))
 
-##
+    # Loop through each district (adm1 = FIRST_DNAM)
+    for district in df['FIRST_DNAM'].dropna().unique():
+        df_district = df[df['FIRST_DNAM'] == district]
+        chiefdoms = df_district['FIRST_CHIE'].dropna().unique()
+        n = len(chiefdoms)
+
+        n_cols = 3
+        n_rows = int(np.ceil(n / n_cols))
+
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), sharex=True, sharey=True)
+        axes = axes.flatten()
+
+        for i, chiefdom in enumerate(chiefdoms):
+            ax = axes[i]
+            row = df_district[df_district['FIRST_CHIE'] == chiefdom]
+
+            if row.empty:
+                ax.set_title(f"{chiefdom} (No data)")
+                ax.axis("off")
+                continue
+
+            for prefix, color in zip(prefixes, colors):
+                cols = [f"{prefix}_{year}" for year in years if f"{prefix}_{year}" in row.columns]
+                values = row[cols].values.flatten()
+
+                if len(values) != len(years) or all(pd.isna(values)):
+                    continue  # Skip if no valid data
+
+                ax.plot(years, values, marker='o', label=prefix.replace('_', ' ').title(), color=color)
+
+                # Add trend line with label
+                if np.count_nonzero(~np.isnan(values)) >= 2:
+                    fit = np.polyfit(years, values, 1)
+                    trend_line = np.poly1d(fit)(years)
+                    ax.plot(years, trend_line, linestyle='--', color=color, alpha=0.7, label="Trend")
+
+            ax.set_title(chiefdom, fontsize=10)
+            ax.grid(True)
+            ax.tick_params(axis='x', rotation=45)
+
+        # Turn off unused axes
+        for j in range(i + 1, len(axes)):
+            axes[j].axis("off")
+
+        # Shared legend
+        handles, labels = axes[0].get_legend_handles_labels()
+        if handles:
+            fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4)
+
+        fig.suptitle(f"Adjusted3 Incidence Trends by Chiefdom - {district}", fontsize=14)
+        plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+
+        filename = os.path.join(output_folder, f"{district}_trends.png")
+        plt.savefig(filename, dpi=300)
+        plt.close()
+        print(f"[Saved] {filename}")
+
+    return df
+
+## Word documents
 import os
 import pandas as pd
 import numpy as np
@@ -1055,7 +1196,11 @@ def export_and_interpret(
     report_title="Malaria Epidemiological Analysis Report",
     author="Malaria Surveillance Team",
     subplots_folder="subplots",
-    trends_folder="epi_lineplots"
+    trends_folder="epi_lineplots",
+    crude_trends_folder="crude_trends_folder",
+    adjusted1_trends_folder="adjusted1_trends_folder",
+    adjusted1_trends_folder="adjusted2_trends_folder",
+    adjusted1_trends_folder="adjusted3_trends_folder"
 ):
     os.makedirs(report_folder, exist_ok=True)
     epi_data = pd.read_excel(path)
@@ -1095,6 +1240,7 @@ def export_and_interpret(
         add_trend_summary_table(doc, trend_df, district)
    # Map subplots
     fig_num = 1
+    
     doc.add_heading("Spatial Distribution Maps", level=1)
     for prefix in ["crude_incidence", "adjusted1", "adjusted2", "adjusted3"]:
         subplot_path = os.path.join(subplots_folder, f"{prefix}_maps.png")
@@ -1102,8 +1248,39 @@ def export_and_interpret(
             caption = f"{prefix.replace('_', ' ').title()} spatial distribution across chiefdoms"
             add_figure(doc, subplot_path, caption, fig_num)
             fig_num += 1
-            
-   # Incidence trends
+
+
+   # Adjusted1 trends
+    doc.add_heading("Adjusted1 Incidence Trends", level=1)
+    if os.path.exists(adjusted1_trends_folder):
+        for file in sorted(Path(adjusted1_trends_folder).glob("*.png")):
+            district_name = file.stem
+            caption = f"Trend of incidence indicators in {district_name}"
+            add_figure(doc, str(file), caption, fig_num)
+            fig_num += 1
+
+
+      # Adjusted2 trends
+    doc.add_heading("Adjusted2 Incidence Trends", level=1)
+    if os.path.exists(adjusted2_trends_folder):
+        for file in sorted(Path(adjusted2_trends_folder).glob("*.png")):
+            district_name = file.stem
+            caption = f"Adjusted2 incidence trends in {district_name}"
+            add_figure(doc, str(file), caption, fig_num)
+            fig_num += 1
+
+
+    # Adjusted3 trends
+    doc.add_heading("Adjusted3 Incidence Trends", level=1)
+    if os.path.exists(adjusted3_trends_folder):
+        for file in sorted(Path(adjusted3_trends_folder).glob("*.png")):
+            district_name = file.stem
+            caption = f"Adjusted2 incidence trends {district_name}"
+            add_figure(doc, str(file), caption, fig_num)
+            fig_num += 1
+
+    
+    # Incidence trends
     doc.add_heading("Incidence Trends", level=1)
     if os.path.exists(trends_folder):
         for file in sorted(Path(trends_folder).glob("*.png")):
@@ -1112,14 +1289,8 @@ def export_and_interpret(
             add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
 
-   # Adjusted1 trends
-    doc.add_heading("Incidence Trends", level=1)
-    if os.path.exists(trends_folder):
-        for file in sorted(Path(trends_folder).glob("*.png")):
-            district_name = file.stem
-            caption = f"Trend of incidence indicators in {district_name}"
-            add_figure(doc, str(file), caption, fig_num)
-            fig_num += 1
+                
+  
     
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
