@@ -9,9 +9,9 @@ import pandas as pd
 from tabulate import tabulate
 import math
 
-def concatenate():
+def concatenate(file_path):
     # Combine the files
-    files = Path("input_files/routine").glob("*.xls")
+    files = Path(file_path).glob("*.xls")
     df_list = [pd.read_excel(file) for file in files]
     combined_df = pd.concat(df_list, ignore_index=True)
 
