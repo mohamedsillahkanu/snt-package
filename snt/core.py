@@ -1199,8 +1199,8 @@ def export_and_interpret(
     trends_folder="epi_lineplots",
     crude_trends_folder="crude_trends_folder",
     adjusted1_trends_folder="adjusted1_trends_folder",
-    adjusted1_trends_folder="adjusted2_trends_folder",
-    adjusted1_trends_folder="adjusted3_trends_folder"
+    adjusted2_trends_folder="adjusted2_trends_folder",
+    adjusted3_trends_folder="adjusted3_trends_folder"
 ):
     os.makedirs(report_folder, exist_ok=True)
     epi_data = pd.read_excel(path)
