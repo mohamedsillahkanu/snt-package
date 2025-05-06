@@ -9,7 +9,7 @@ import pandas as pd
 from tabulate import tabulate
 import math
 
-def concatenate(file_path):
+def combine_xls(file_path):
     # Combine the files
     files = Path(file_path).glob("*.xls")
     df_list = [pd.read_excel(file) for file in files]
@@ -27,6 +27,47 @@ def concatenate(file_path):
     print(tabulate(col_table, headers=["Column 1", "Column 2", "Column 3"], tablefmt="grid"))
 
     return combined_df
+
+def combine_xlsx(file_path):
+    # Combine the files
+    files = Path(file_path).glob("*.xlsx")
+    df_list = [pd.read_excel(file) for file in files]
+    combined_df = pd.concat(df_list, ignore_index=True)
+
+    # Print head
+    print("\n=== Preview of Combined Data ===")
+    print(tabulate(combined_df.tail(), headers='keys', tablefmt='grid'))
+
+    # Format column names into 3 columns
+    print("\n=== Column Names (3 per row) ===")
+    columns = list(combined_df.columns)
+    padded_cols = columns + [""] * ((3 - len(columns) % 3) % 3)  # pad to multiple of 3
+    col_table = [padded_cols[i:i+3] for i in range(0, len(padded_cols), 3)]
+    print(tabulate(col_table, headers=["Column 1", "Column 2", "Column 3"], tablefmt="grid"))
+
+    return combined_df
+
+
+
+def combine_csv(file_path):
+    # Combine the files
+    files = Path(file_path).glob("*.csv")
+    df_list = [pd.read_csv(file) for file in files]
+    combined_df = pd.concat(df_list, ignore_index=True)
+
+    # Print head
+    print("\n=== Preview of Combined Data ===")
+    print(tabulate(combined_df.tail(), headers='keys', tablefmt='grid'))
+
+    # Format column names into 3 columns
+    print("\n=== Column Names (3 per row) ===")
+    columns = list(combined_df.columns)
+    padded_cols = columns + [""] * ((3 - len(columns) % 3) % 3)  # pad to multiple of 3
+    col_table = [padded_cols[i:i+3] for i in range(0, len(padded_cols), 3)]
+    print(tabulate(col_table, headers=["Column 1", "Column 2", "Column 3"], tablefmt="grid"))
+
+    return combined_df
+
 
 def rename(df, path):
     name_map = pd.read_excel(path)
@@ -50,7 +91,7 @@ def compute(df):
             print(f"Skipping '{new_var}' — missing columns: {missing_cols}")
             continue
 
-        if op == "rowsum":
+        if op == "add":
             df[new_var] = df[components].sum(axis=1, skipna=True, min_count=1)
         elif op == "subtract" and len(components) >= 2:
             df[new_var] = df[components[0]] - df[components[1]]
@@ -59,6 +100,8 @@ def compute(df):
             print(f"Skipping '{new_var}' — unsupported operation or insufficient components.")
     
     return df
+
+
 
 def sort(df):
     try:
