@@ -784,11 +784,11 @@ def crude_trends(path, output_folder='crude_plots'):
     df = pd.read_excel(path)
 
     # Define prefixes and colors
-    prefixes = ['crude']
+    prefixes = ['crude_incidence']
     colors = ['blue']
 
     # Get list of years from column names
-    pattern = re.compile(r'^crude_(\d{4})$')
+    pattern = re.compile(r'^crude_incidence_(\d{4})$')
     years = sorted(int(pattern.match(col).group(1)) for col in df.columns if pattern.match(col))
 
     # Loop through each district (adm1 = FIRST_DNAM)
