@@ -1239,10 +1239,10 @@ def export_and_interpret(
     author="Malaria Surveillance Team",
     subplots_folder="subplots",
     trends_folder="epi_lineplots",
-    crude_trends_folder="crude_trends_folder",
-    adjusted1_trends_folder="adjusted1_trends_folder",
-    adjusted2_trends_folder="adjusted2_trends_folder",
-    adjusted3_trends_folder="adjusted3_trends_folder"
+    crude_trends_folder="crude_plots",
+    adjusted1_trends_folder="adjusted1_plots",
+    adjusted2_trends_folder="adjusted2_plots",
+    adjusted3_trends_folder="adjusted3_plots"
 ):
     os.makedirs(report_folder, exist_ok=True)
     epi_data = pd.read_excel(path)
@@ -1291,6 +1291,17 @@ def export_and_interpret(
             add_figure(doc, subplot_path, caption, fig_num)
             fig_num += 1
 
+
+
+
+    # crude trends
+    doc.add_heading("Adjusted1 Incidence Trends", level=1)
+    if os.path.exists(crude_trends_folder):
+        for file in sorted(Path(adjusted1_trends_folder).glob("*.png")):
+            district_name = file.stem
+            caption = f"Trend of incidence indicators in {district_name}"
+            add_figure(doc, str(file), caption, fig_num)
+            fig_num += 1
 
    # Adjusted1 trends
     doc.add_heading("Adjusted1 Incidence Trends", level=1)
