@@ -1352,8 +1352,6 @@ def export_and_interpret(
 
 
 ####
-
-
 import geopandas as gpd
 import rasterio
 import rasterio.mask
@@ -1364,14 +1362,16 @@ import gzip
 import shutil
 import tempfile
 import pandas as pd
+import math
 from datetime import datetime
 import matplotlib.pyplot as plt
 from pathlib import Path
 
 
-def rainfall(start_date, end_date, shapefile_path):
+def rainfall(start_date, end_date, shapefile_path, output_dir=None):
     """
-    Calculate mean rainfall for a given shapefile over a specified date range.
+    Calculate mean rainfall for a given shapefile over a specified date range,
+    save data to Excel, and generate maps for each time period.
     
     Parameters:
     -----------
@@ -1381,6 +1381,8 @@ def rainfall(start_date, end_date, shapefile_path):
         End date in format 'YYYY-MM'
     shapefile_path : str
         Path to the shapefile (.shp). The .shx and .dbf files must be in the same directory.
+    output_dir : str, optional
+        Directory to save outputs. If None, uses current directory.
     
     Returns:
     --------
@@ -1398,6 +1400,15 @@ def rainfall(start_date, end_date, shapefile_path):
             raise ValueError("Dates must be in format YYYY-MM")
         else:
             raise e
+    
+    # Set up output directory
+    if output_dir is None:
+        output_dir = os.getcwd()
+    output_dir = Path(output_dir)
+    
+    # Create directories if they don't exist
+    maps_dir = output_dir / "rainfall maps"
+    maps_dir.mkdir(parents=True, exist_ok=True)
     
     # Check if shapefile exists and has required components
     shp_path = Path(shapefile_path)
@@ -1436,6 +1447,9 @@ def rainfall(start_date, end_date, shapefile_path):
     
     # Create a list to store results for each period
     all_results = []
+    period_gdfs = []  # Store period GDFs for subplot generation
+    
+    print(f"Processing rainfall data from {start_date} to {end_date}...")
     
     # Process each time period
     for year, month in periods:
@@ -1494,6 +1508,29 @@ def rainfall(start_date, end_date, shapefile_path):
                     
                     # Add to results
                     all_results.append(period_gdf)
+                    period_gdfs.append((year, month, period_gdf.copy()))
+                    
+                    # Generate individual map for this period
+                    print(f"Generating map for {year}-{month:02d}...")
+                    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+                    
+                    # Plot the GeoDataFrame
+                    period_gdf.plot(column='mean_rain', ax=ax, legend=True, 
+                                   cmap='viridis', edgecolor="black", 
+                                   legend_kwds={'shrink': 0.5})
+                    
+                    # Remove axis boxes
+                    ax.set_axis_off()
+                    
+                    # Add title
+                    plt.title(f"Mean Rainfall for {year}-{month:02d}", fontsize=16)
+                    
+                    # Save the map
+                    map_filename = f"rainfall_{year}_{month:02d}.png"
+                    map_path = maps_dir / map_filename
+                    plt.savefig(map_path, bbox_inches='tight', dpi=300)
+                    plt.close(fig)
+                    
                     print(f"Processed {year}-{month:02d}")
                     
         except Exception as e:
@@ -1505,66 +1542,118 @@ def rainfall(start_date, end_date, shapefile_path):
     # Combine all results
     result_df = pd.concat(all_results)
     
+    # Save data to Excel
+    excel_path = output_dir / f"rainfall_data_{start_date}_to_{end_date}.xlsx"
+    csv_path = output_dir / f"rainfall_data_{start_date}_to_{end_date}.csv"
+    
+    # Convert to regular DataFrame for Excel export (drop geometry column)
+    export_df = pd.DataFrame(result_df.drop(columns=['geometry']))
+    
+    print(f"Saving data to Excel: {excel_path}")
+    export_df.to_excel(excel_path, index=False)
+    
+    print(f"Saving data to CSV: {csv_path}")
+    export_df.to_csv(csv_path, index=False)
+    
+    # Generate composite subplots figure
+    print("Generating composite map with subplots...")
+    create_subplots_figure(period_gdfs, maps_dir, f"rainfall_composite_{start_date}_to_{end_date}.png")
+    
+    print(f"Processing complete. Results saved to {output_dir}")
+    print(f"- Excel data: {excel_path}")
+    print(f"- CSV data: {csv_path}")
+    print(f"- Maps: {maps_dir}")
+    print(f"- Composite map: {maps_dir}/rainfall_composite_{start_date}_to_{end_date}.png")
+    
     return result_df
 
 
-def plot_rainfall_map(df, period=None, column='mean_rain', cmap='viridis', figsize=(12, 10),
-                     title=None, save_path=None):
+def create_subplots_figure(period_gdfs, output_dir, filename):
     """
-    Plot rainfall data on a map.
+    Create a composite figure with 4 columns and automatically calculated rows
+    for all time periods.
     
     Parameters:
     -----------
-    df : GeoDataFrame
-        GeoDataFrame containing rainfall data
-    period : str, optional
-        Specific period to plot (e.g., '2020-01'). If None, the entire dataset is plotted.
-    column : str, default 'mean_rain'
-        Column to plot
-    cmap : str, default 'viridis'
-        Matplotlib colormap to use
-    figsize : tuple, default (12, 10)
-        Figure size
-    title : str, optional
-        Custom title for the plot
-    save_path : str, optional
-        Path to save the figure
-    
-    Returns:
-    --------
-    matplotlib.figure.Figure
-        The generated figure
+    period_gdfs : list
+        List of tuples (year, month, gdf) for each time period
+    output_dir : Path
+        Directory to save the figure
+    filename : str
+        Filename for the composite figure
     """
-    if period:
-        plot_df = df[df['date'] == period]
-        if len(plot_df) == 0:
-            raise ValueError(f"No data available for period {period}")
-    else:
-        plot_df = df
+    n_periods = len(period_gdfs)
+    if n_periods == 0:
+        return
     
-    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    # Calculate number of rows needed (4 columns)
+    n_cols = 4
+    n_rows = math.ceil(n_periods / n_cols)
     
-    # Plotting the GeoDataFrame
-    plot_df.plot(column=column, ax=ax, legend=True, cmap=cmap, 
-                edgecolor="black", legend_kwds={'shrink': 0.5})
+    # Create figure
+    fig_width = 20  # inches
+    fig_height = 5 * n_rows  # 5 inches per row
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_width, fig_height))
     
-    # Remove axis boxes
-    ax.set_axis_off()
+    # Flatten axes if only one row
+    if n_rows == 1:
+        axes = [axes]
     
-    # Add title
-    if title:
-        plt.title(title, fontsize=16)
-    elif period:
-        plt.title(f"Mean Rainfall for {period}", fontsize=16)
-    else:
-        plt.title("Mean Rainfall", fontsize=16)
+    # Flatten axes array for easy indexing
+    axes_flat = axes.flatten() if n_rows > 1 else axes
     
-    if save_path:
-        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+    # Get the global min and max rainfall values for consistent color scale
+    all_min = float('inf')
+    all_max = float('-inf')
     
-    return fig
+    for _, _, gdf in period_gdfs:
+        if len(gdf) > 0:  # Check if the GDF has data
+            min_val = gdf['mean_rain'].min()
+            max_val = gdf['mean_rain'].max()
+            
+            if not np.isnan(min_val) and min_val < all_min:
+                all_min = min_val
+            if not np.isnan(max_val) and max_val > all_max:
+                all_max = max_val
+    
+    # Plot each period
+    for i, (year, month, gdf) in enumerate(period_gdfs):
+        if i < len(axes_flat):
+            ax = axes_flat[i]
+            
+            # Plot the GeoDataFrame
+            gdf.plot(column='mean_rain', ax=ax, legend=True if i % n_cols == n_cols-1 else False,
+                    cmap='viridis', edgecolor="black", vmin=all_min, vmax=all_max,
+                    legend_kwds={'shrink': 0.5})
+            
+            # Remove axis boxes
+            ax.set_axis_off()
+            
+            # Add title
+            ax.set_title(f"{year}-{month:02d}", fontsize=12)
+    
+    # Hide any unused subplots
+    for j in range(i + 1, len(axes_flat)):
+        axes_flat[j].set_visible(False)
+    
+    # Add a colorbar to the figure
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    cax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
+    sm = plt.cm.ScalarMappable(cmap='viridis', norm=plt.Normalize(vmin=all_min, vmax=all_max))
+    sm._A = []  # Empty array for the data range
+    cbar = fig.colorbar(sm, cax=cax)
+    cbar.set_label('Mean Rainfall (mm)')
+    
+    # Add a main title for the entire figure
+    fig.suptitle('Rainfall by Month', fontsize=20, y=0.98)
+    
+    # Adjust layout
+    plt.tight_layout(rect=[0, 0, 0.9, 0.95])  # [left, bottom, right, top]
+    
+    # Save the figure
+    output_path = output_dir / filename
+    plt.savefig(output_path, bbox_inches='tight', dpi=300)
+    plt.close(fig)
+    
+    print(f"Composite figure saved to: {output_path}")
 
-
-# Example usage:
-# df = rainfall('2015-01', '2015-03', '/path/to/shapefile.shp')
-# plot_rainfall_map(df, period='2015-01')
