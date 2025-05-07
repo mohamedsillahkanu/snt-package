@@ -12,13 +12,15 @@ setup(
     'xlrd>=2.0.0',         # If reading older .xls files
     'pyreadstat>=1.1.4',   # Optional: for reading Stata/SAS/SPSS if needed later
     'tabulate>=0.8.9',     # For table formatting
-    'geopandas',           # For geospatial data handling
+    'geopandas>=0.10.0',   # For geospatial data handling
     'matplotlib>=3.1.0',   # For plotting
     'python-docx>=0.8.11', # For creating Word documents
     'pathlib',             # For file path operations (included in Python 3.4+)
-    'Pillow>=8.0.0'       # Required for image handling with python-docx
-    
-        
+    'Pillow>=8.0.0',       # For image processing
+    'rasterio>=1.2.0',     # For raster data processing (needed for CHIRPS data)
+    'requests>=2.25.0',    # For downloading data files
+    'shapely>=1.7.0',      # For geometric operations (dependency of geopandas)
+    'fiona>=1.8.0',        # For reading/writing spatial data (dependency of geopandas)
 ],
     description='SNT Toolbox for data processing',
     author='Mohamed Sillah Kanu',
