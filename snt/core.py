@@ -1347,3 +1347,224 @@ def export_and_interpret(
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")
+
+
+
+
+####
+
+
+import geopandas as gpd
+import rasterio
+import rasterio.mask
+import numpy as np
+import os
+import requests
+import gzip
+import shutil
+import tempfile
+import pandas as pd
+from datetime import datetime
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+
+def rainfall(start_date, end_date, shapefile_path):
+    """
+    Calculate mean rainfall for a given shapefile over a specified date range.
+    
+    Parameters:
+    -----------
+    start_date : str
+        Start date in format 'YYYY-MM'
+    end_date : str
+        End date in format 'YYYY-MM'
+    shapefile_path : str
+        Path to the shapefile (.shp). The .shx and .dbf files must be in the same directory.
+    
+    Returns:
+    --------
+    pandas.DataFrame
+        DataFrame containing rainfall data for each region and time period
+    """
+    # Validate and parse dates
+    try:
+        start = datetime.strptime(start_date, '%Y-%m')
+        end = datetime.strptime(end_date, '%Y-%m')
+        if start > end:
+            raise ValueError("Start date must be before end date")
+    except ValueError as e:
+        if "time data" in str(e):
+            raise ValueError("Dates must be in format YYYY-MM")
+        else:
+            raise e
+    
+    # Check if shapefile exists and has required components
+    shp_path = Path(shapefile_path)
+    if not shp_path.exists():
+        raise FileNotFoundError(f"Shapefile not found: {shapefile_path}")
+    
+    # Check for .shx and .dbf files
+    shx_path = shp_path.with_suffix('.shx')
+    dbf_path = shp_path.with_suffix('.dbf')
+    
+    if not shx_path.exists():
+        raise FileNotFoundError(f".shx file not found: {shx_path}")
+    if not dbf_path.exists():
+        raise FileNotFoundError(f".dbf file not found: {dbf_path}")
+    
+    # Load the shapefile
+    try:
+        gdf = gpd.read_file(shapefile_path)
+    except Exception as e:
+        raise ValueError(f"Error loading shapefile: {str(e)}")
+    
+    # Check if the CRS is set, if not, set it manually
+    if gdf.crs is None:
+        gdf = gdf.set_crs("EPSG:4326")  # Assuming WGS84
+    
+    # Generate list of year-month combinations
+    periods = []
+    current = start
+    while current <= end:
+        periods.append((current.year, current.month))
+        # Move to next month
+        if current.month == 12:
+            current = current.replace(year=current.year+1, month=1)
+        else:
+            current = current.replace(month=current.month+1)
+    
+    # Create a list to store results for each period
+    all_results = []
+    
+    # Process each time period
+    for year, month in periods:
+        try:
+            # Define the link for CHIRPS data
+            link = f"https://data.chc.ucsb.edu/products/CHIRPS-2.0/africa_monthly/tifs/chirps-v2.0.{year}.{month:02d}.tif.gz"
+            
+            # Download and process CHIRPS data
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Download the .tif.gz file
+                print(f"Downloading data for {year}-{month:02d}...")
+                response = requests.get(link)
+                if response.status_code != 200:
+                    print(f"Warning: Could not download data for {year}-{month:02d}")
+                    continue
+                
+                zipped_file_path = os.path.join(tmpdir, "chirps.tif.gz")
+                unzipped_file_path = os.path.join(tmpdir, "chirps.tif")
+                
+                with open(zipped_file_path, "wb") as f:
+                    f.write(response.content)
+                
+                # Unzip the file
+                with gzip.open(zipped_file_path, "rb") as f_in:
+                    with open(unzipped_file_path, "wb") as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                
+                # Open the unzipped .tif file with Rasterio
+                with rasterio.open(unzipped_file_path) as src:
+                    # Create a copy of the GeoDataFrame for this period
+                    period_gdf = gdf.copy()
+                    
+                    # Reproject shapefile to match CHIRPS data CRS
+                    period_gdf = period_gdf.to_crs(src.crs)
+                    
+                    # Calculate mean rainfall for each geometry
+                    mean_rains = []
+                    for geom in period_gdf.geometry:
+                        try:
+                            masked_data, _ = rasterio.mask.mask(src, [geom], crop=True)
+                            masked_data = masked_data.flatten()
+                            masked_data = masked_data[masked_data != src.nodata]  # Exclude nodata values
+                            if len(masked_data) > 0:
+                                mean_rains.append(masked_data.mean())
+                            else:
+                                mean_rains.append(np.nan)
+                        except Exception as e:
+                            print(f"Error processing geometry: {e}")
+                            mean_rains.append(np.nan)
+                    
+                    # Add mean rainfall to the GeoDataFrame
+                    period_gdf['mean_rain'] = mean_rains
+                    period_gdf['year'] = year
+                    period_gdf['month'] = month
+                    period_gdf['date'] = f"{year}-{month:02d}"
+                    
+                    # Add to results
+                    all_results.append(period_gdf)
+                    print(f"Processed {year}-{month:02d}")
+                    
+        except Exception as e:
+            print(f"Error processing {year}-{month:02d}: {str(e)}")
+    
+    if not all_results:
+        raise ValueError("No data could be processed for the specified date range")
+    
+    # Combine all results
+    result_df = pd.concat(all_results)
+    
+    return result_df
+
+
+def plot_rainfall_map(df, period=None, column='mean_rain', cmap='viridis', figsize=(12, 10),
+                     title=None, save_path=None):
+    """
+    Plot rainfall data on a map.
+    
+    Parameters:
+    -----------
+    df : GeoDataFrame
+        GeoDataFrame containing rainfall data
+    period : str, optional
+        Specific period to plot (e.g., '2020-01'). If None, the entire dataset is plotted.
+    column : str, default 'mean_rain'
+        Column to plot
+    cmap : str, default 'viridis'
+        Matplotlib colormap to use
+    figsize : tuple, default (12, 10)
+        Figure size
+    title : str, optional
+        Custom title for the plot
+    save_path : str, optional
+        Path to save the figure
+    
+    Returns:
+    --------
+    matplotlib.figure.Figure
+        The generated figure
+    """
+    if period:
+        plot_df = df[df['date'] == period]
+        if len(plot_df) == 0:
+            raise ValueError(f"No data available for period {period}")
+    else:
+        plot_df = df
+    
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    
+    # Plotting the GeoDataFrame
+    plot_df.plot(column=column, ax=ax, legend=True, cmap=cmap, 
+                edgecolor="black", legend_kwds={'shrink': 0.5})
+    
+    # Remove axis boxes
+    ax.set_axis_off()
+    
+    # Add title
+    if title:
+        plt.title(title, fontsize=16)
+    elif period:
+        plt.title(f"Mean Rainfall for {period}", fontsize=16)
+    else:
+        plt.title("Mean Rainfall", fontsize=16)
+    
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+    
+    return fig
+
+
+# Example usage:
+# df = rainfall('2015-01', '2015-03', '/path/to/shapefile.shp')
+# plot_rainfall_map(df, period='2015-01')
