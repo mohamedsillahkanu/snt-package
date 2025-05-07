@@ -819,6 +819,11 @@ def epi_trends(path, output_folder='epi_lineplots'):
 
 
 ## Crude incidence
+import os
+import re
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 def crude_trends(path, output_folder='crude_plots'):
     os.makedirs(output_folder, exist_ok=True)
@@ -830,7 +835,7 @@ def crude_trends(path, output_folder='crude_plots'):
     prefixes = ['crude_incidence']
     colors = ['blue']
 
-    # Get list of years from column names
+    # Get list of years from column names using first prefix
     pattern = re.compile(r'^crude_incidence_(\d{4})$')
     years = sorted(int(pattern.match(col).group(1)) for col in df.columns if pattern.match(col))
 
@@ -864,7 +869,7 @@ def crude_trends(path, output_folder='crude_plots'):
 
                 ax.plot(years, values, marker='o', label=prefix.replace('_', ' ').title(), color=color)
 
-                # Add trend line with label
+                # Add trend line if enough data
                 if np.count_nonzero(~np.isnan(values)) >= 2:
                     fit = np.polyfit(years, values, 1)
                     trend_line = np.poly1d(fit)(years)
@@ -874,11 +879,11 @@ def crude_trends(path, output_folder='crude_plots'):
             ax.grid(True)
             ax.tick_params(axis='x', rotation=45)
 
-        # Turn off unused axes
+        # Turn off unused subplots
         for j in range(i + 1, len(axes)):
             axes[j].axis("off")
 
-        # Shared legend
+        # Add shared legend
         handles, labels = axes[0].get_legend_handles_labels()
         if handles:
             fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4)
@@ -892,6 +897,7 @@ def crude_trends(path, output_folder='crude_plots'):
         print(f"[Saved] {filename}")
 
     return df
+
 
 ## Adjusted1 trend
 
