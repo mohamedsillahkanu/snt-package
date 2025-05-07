@@ -761,8 +761,9 @@ def epi_trends(path, output_folder='epi_lineplots'):
     colors = ['blue', 'green', 'orange', 'red']
 
     # Get list of years from column names
-    pattern = re.compile(rf'^{prefix}_(\d{{4}})$')
-    years = sorted(int(pattern.match(col).group(1)) for col in df.columns if pattern.match(col))
+    pattern = re.compile(rf'^({"|".join(prefixes)})_(\d{{4}})$')
+    # Extract years from column names that match the pattern
+    years = sorted(set(int(match.group(2)) for col in df.columns if (match := pattern.match(col))))
 
     # Loop through each district (adm1 = FIRST_DNAM)
     for district in df['FIRST_DNAM'].dropna().unique():
@@ -1295,11 +1296,11 @@ def export_and_interpret(
 
 
     # crude trends
-    doc.add_heading("Adjusted1 Incidence Trends", level=1)
+    doc.add_heading("Crude Incidence Trends", level=1)
     if os.path.exists(crude_trends_folder):
-        for file in sorted(Path(adjusted1_trends_folder).glob("*.png")):
+        for file in sorted(Path(crude_trends_folder).glob("*.png")):
             district_name = file.stem
-            caption = f"Trend of incidence indicators in {district_name}"
+            caption = f"Crude incidence trends in {district_name}"
             add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
 
@@ -1308,7 +1309,7 @@ def export_and_interpret(
     if os.path.exists(adjusted1_trends_folder):
         for file in sorted(Path(adjusted1_trends_folder).glob("*.png")):
             district_name = file.stem
-            caption = f"Trend of incidence indicators in {district_name}"
+            caption = f"Adjusted1 incidence trends in {district_name}"
             add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
 
@@ -1338,13 +1339,9 @@ def export_and_interpret(
     if os.path.exists(trends_folder):
         for file in sorted(Path(trends_folder).glob("*.png")):
             district_name = file.stem
-            caption = f"Trend of incidence indicators in {district_name}"
+            caption = f"Adjusted3 incidence trends in {district_name}"
             add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
-
-                
-  
-    
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
