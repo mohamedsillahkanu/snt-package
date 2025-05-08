@@ -1322,10 +1322,7 @@ def export_and_interpret(
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")
-    # Convert to PDF
-    pdf_path = output_file.replace(".docx", ".pdf")
-    convert(output_file)
-    print(f"✅ PDF also saved to: {pdf_path}")
+  
 
 ####
 import geopandas as gpd
