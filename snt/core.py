@@ -1256,7 +1256,8 @@ def export_and_interpret(
     doc.add_heading(report_title, level=0)
     p = doc.add_paragraph()
     p.add_run(f"Prepared by: {author}").bold = True
-    p.add_run(f"\nDate: {datetime.datetime.now().strftime('%B %d, %Y')}")
+    p.add_run(f"\nDate: {datetime.now().strftime('%B %d, %Y')}")
+
 
     doc.add_heading("Introduction", level=1)
     doc.add_paragraph(
