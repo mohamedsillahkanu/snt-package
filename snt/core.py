@@ -1235,6 +1235,7 @@ def add_trend_summary_table(doc, trend_df, district_name):
         cells[4].text = row['adjusted3']
 
 ###
+from docx2pdf import convert
 def export_and_interpret(
     path,
     report_folder="final_report",
@@ -1254,7 +1255,7 @@ def export_and_interpret(
     doc.add_heading(report_title, level=0)
     p = doc.add_paragraph()
     p.add_run(f"Prepared by: {author}").bold = True
-    p.add_run(f"\nDate: {datetime.datetime.now().strftime('%B %d, %Y')}")
+    p.add_run(f"\nDate: {datetime.now().strftime('%B %d, %Y')}")
 
     doc.add_heading("Introduction", level=1)
     doc.add_paragraph(
@@ -1317,10 +1318,14 @@ def export_and_interpret(
             add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
 
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")
+    # Convert to PDF
+    pdf_path = output_file.replace(".docx", ".pdf")
+    convert(output_file)
+    print(f"✅ PDF also saved to: {pdf_path}")
 
 ####
 import geopandas as gpd
