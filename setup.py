@@ -20,8 +20,8 @@ setup(
     'rasterio>=1.2.0',     # For raster data processing (needed for CHIRPS data)
     'requests>=2.25.0',    # For downloading data files
     'shapely>=1.7.0',      # For geometric operations (dependency of geopandas)
-    'fiona>=1.8.0',        
-    'docx2pdf'
+    'fiona>=1.8.0'       
+ 
         
        
 ],
