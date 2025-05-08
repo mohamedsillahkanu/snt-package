@@ -16,9 +16,9 @@
 
 ### 1. Clone the repo
 
-```bash
+```python
 git clone https://github.com/mohamedsillahkanu/snt.git
 ```
-```bash
+```python
 cd snt-package
 ```
