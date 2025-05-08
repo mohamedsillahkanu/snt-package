@@ -673,11 +673,11 @@ from matplotlib.colors import BoundaryNorm
 from matplotlib.patches import Patch
 import numpy as np
 
-def subplots(epi_data_path):
+def subplots():
     prefixes = ['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_']
     os.makedirs("subplots", exist_ok=True)
     
-    df1 = pd.read_excel(epi_data_path)
+    df1 = pd.read_excel("input_files/others/2024_snt_data.xlsx")
     gdf_shape = gpd.read_file("input_files/routine/shapefile/Chiefdom2021.shp")
     gdf = gdf_shape.merge(df1, on=["FIRST_DNAM", "FIRST_CHIE"], how="left", validate="1:1")
     
@@ -750,11 +750,11 @@ import numpy as np
 import re
 import os
 
-def epi_trends(path, output_folder='epi_lineplots'):
+def epi_trends(output_folder='epi_lineplots'):
     os.makedirs(output_folder, exist_ok=True)
 
     # Read the Excel file
-    df = pd.read_excel(path)
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
 
     # Define prefixes and colors
     prefixes = ['crude_incidence', 'adjusted1', 'adjusted2', 'adjusted3']
@@ -826,11 +826,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def crude_trends(path, output_folder='crude_plots'):
+def crude_trends(output_folder='crude_plots'):
     os.makedirs(output_folder, exist_ok=True)
 
     # Read the Excel file
-    df = pd.read_excel(path)
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
 
     # Define prefixes and colors
     prefixes = ['crude_incidence']
@@ -909,11 +909,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def adjusted1_trends(path, output_folder='adjusted1_plots'):
+def adjusted1_trends(output_folder='adjusted1_plots'):
     os.makedirs(output_folder, exist_ok=True)
 
     # Read the Excel file
-    df = pd.read_excel(path)
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
 
     # Define prefixes and colors
     prefixes = ['adjusted1']
@@ -985,10 +985,10 @@ def adjusted1_trends(path, output_folder='adjusted1_plots'):
 
 # Adjusted2 
 
-def adjusted2_trends(path, output_folder='adjusted2_plots'):
+def adjusted2_trends(output_folder='adjusted2_plots'):
     os.makedirs(output_folder, exist_ok=True)
 
-    df = pd.read_excel(path)
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
     prefixes = ['adjusted2']
     colors = ['orange']
 
@@ -1053,10 +1053,10 @@ def adjusted2_trends(path, output_folder='adjusted2_plots'):
 
 
 ### Adjusted3
-def adjusted3_trends(path, output_folder='adjusted3_plots'):
+def adjusted3_trends(output_folder='adjusted3_plots'):
     os.makedirs(output_folder, exist_ok=True)
 
-    df = pd.read_excel(path)
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
     prefixes = ['adjusted3']
     colors = ['purple']
 
@@ -1238,7 +1238,6 @@ def add_trend_summary_table(doc, trend_df, district_name):
 ###
 
 def export_and_interpret(
-    path,
     report_folder="final_report",
     report_title="Malaria Epidemiological Analysis Report",
     author="Malaria Surveillance Team",
@@ -1250,7 +1249,7 @@ def export_and_interpret(
     adjusted3_trends_folder="adjusted3_plots"
 ):
     os.makedirs(report_folder, exist_ok=True)
-    epi_data = pd.read_excel(path)
+    epi_data = pd.read_excel("input_files/others/2024_snt_data.xlsx")
     doc = Document()
 
     doc.add_heading(report_title, level=0)
