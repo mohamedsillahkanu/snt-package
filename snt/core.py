@@ -1130,7 +1130,8 @@ from docx import Document
 from docx.shared import Inches
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-import datetime
+from datetime import datetime
+
 
 
 def add_figure(doc, image_path, caption, fig_num):
