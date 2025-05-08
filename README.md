@@ -1,5 +1,3 @@
-# snt-package 📦
-
 **SNT** is a Python toolbox designed for simple, reproducible data transformation of health surveillance datasets — including merging, renaming, computing, and reshaping your data.
 
 ---
@@ -20,4 +18,7 @@
 
 ```bash
 git clone https://github.com/mohamedsillahkanu/snt.git
+```
+```bash
 cd snt-package
+```
