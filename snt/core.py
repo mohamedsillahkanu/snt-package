@@ -1235,7 +1235,7 @@ def add_trend_summary_table(doc, trend_df, district_name):
         cells[4].text = row['adjusted3']
 
 ###
-from docx2pdf import convert
+
 def export_and_interpret(
     path,
     report_folder="final_report",
