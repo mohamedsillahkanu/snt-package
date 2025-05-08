@@ -1348,7 +1348,7 @@ def export_and_interpret(
             add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
 
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")  
