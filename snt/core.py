@@ -1233,6 +1233,7 @@ def add_trend_summary_table(doc, trend_df, district_name):
         cells[3].text = row['adjusted2']
         cells[4].text = row['adjusted3']
 
+###
 def export_and_interpret(
     path,
     report_folder="final_report",
@@ -1276,14 +1277,28 @@ def export_and_interpret(
     trend_df = summarize_all_district_trends(epi_data)
 
     doc.add_heading("Trend Summary by District", level=1)
+    fig_num = 1  # Figure counter
+    
     for district in trend_df['District'].unique():
         trend_summary = interpret_district_trends(trend_df, district)
         for s in trend_summary:
             doc.add_paragraph(s)
         add_trend_summary_table(doc, trend_df, district)
-   # Map subplots
-    fig_num = 1
-    
+
+        # Add line plots for the current district after the summary table
+        for folder, label in [
+            (crude_trends_folder, "Crude"),
+            (adjusted1_trends_folder, "Adjusted1"),
+            (adjusted2_trends_folder, "Adjusted2"),
+            (adjusted3_trends_folder, "Adjusted3"),
+        ]:
+            file_path = Path(folder) / f"{district}.png"
+            if file_path.exists():
+                caption = f"{label} incidence trends in {district}"
+                add_figure(doc, str(file_path), caption, fig_num)
+                fig_num += 1
+
+    # Spatial Maps Section
     doc.add_heading("Spatial Distribution Maps", level=1)
     for prefix in ["crude_incidence", "adjusted1", "adjusted2", "adjusted3"]:
         subplot_path = os.path.join(subplots_folder, f"{prefix}_maps.png")
@@ -1292,49 +1307,7 @@ def export_and_interpret(
             add_figure(doc, subplot_path, caption, fig_num)
             fig_num += 1
 
-
-
-
-    # crude trends
-    doc.add_heading("Crude Incidence Trends", level=1)
-    if os.path.exists(crude_trends_folder):
-        for file in sorted(Path(crude_trends_folder).glob("*.png")):
-            district_name = file.stem
-            caption = f"Crude incidence trends in {district_name}"
-            add_figure(doc, str(file), caption, fig_num)
-            fig_num += 1
-
-   # Adjusted1 trends
-    doc.add_heading("Adjusted1 Incidence Trends", level=1)
-    if os.path.exists(adjusted1_trends_folder):
-        for file in sorted(Path(adjusted1_trends_folder).glob("*.png")):
-            district_name = file.stem
-            caption = f"Adjusted1 incidence trends in {district_name}"
-            add_figure(doc, str(file), caption, fig_num)
-            fig_num += 1
-
-
-      # Adjusted2 trends
-    doc.add_heading("Adjusted2 Incidence Trends", level=1)
-    if os.path.exists(adjusted2_trends_folder):
-        for file in sorted(Path(adjusted2_trends_folder).glob("*.png")):
-            district_name = file.stem
-            caption = f"Adjusted2 incidence trends in {district_name}"
-            add_figure(doc, str(file), caption, fig_num)
-            fig_num += 1
-
-
-    # Adjusted3 trends
-    doc.add_heading("Adjusted3 Incidence Trends", level=1)
-    if os.path.exists(adjusted3_trends_folder):
-        for file in sorted(Path(adjusted3_trends_folder).glob("*.png")):
-            district_name = file.stem
-            caption = f"Adjusted2 incidence trends {district_name}"
-            add_figure(doc, str(file), caption, fig_num)
-            fig_num += 1
-
-    
-    # Incidence trends
+    # Incidence trends (district-level combined lineplots if needed)
     doc.add_heading("Incidence Trends", level=1)
     if os.path.exists(trends_folder):
         for file in sorted(Path(trends_folder).glob("*.png")):
@@ -1347,9 +1320,6 @@ def export_and_interpret(
     output_file = os.path.join(report_folder, f"Malaria_Analysis_Report_{timestamp}.docx")
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")
-
-
-
 
 ####
 import geopandas as gpd
