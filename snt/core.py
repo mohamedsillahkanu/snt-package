@@ -1131,7 +1131,7 @@ from docx.shared import Inches
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import datetime
-from datetime import datetime
+
 
 def add_figure(doc, image_path, caption, fig_num):
     doc.add_page_break()
@@ -1342,7 +1342,7 @@ def export_and_interpret(
     if os.path.exists(trends_folder):
         for file in sorted(Path(trends_folder).glob("*.png")):
             district_name = file.stem
-            caption = f"Adjusted3 incidence trends in {district_name}"
+            caption = f"Incidence trends in {district_name}"
             add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
 
