@@ -1556,7 +1556,7 @@ def rainfall(start_date, end_date, shapefile_path, output_dir=None):
     export_df.to_csv(csv_path, index=False)
     
     # Generate composite subplots figure
-    print("Generating composite map with subplots...")
+    print("Generating composite map with subplots (each with individual legend)...")
     create_subplots_figure(period_gdfs, maps_dir, f"rainfall_composite_{start_date}_to_{end_date}.png")
     
     print(f"Processing complete. Results saved to {output_dir}")
@@ -1571,7 +1571,7 @@ def rainfall(start_date, end_date, shapefile_path, output_dir=None):
 def create_subplots_figure(period_gdfs, output_dir, filename):
     """
     Create a composite figure with 4 columns and automatically calculated rows
-    for all time periods.
+    for all time periods, with individual legends for each subplot.
     
     Parameters:
     -----------
@@ -1590,65 +1590,43 @@ def create_subplots_figure(period_gdfs, output_dir, filename):
     n_cols = 4
     n_rows = math.ceil(n_periods / n_cols)
     
-    # Create figure
-    fig_width = 20  # inches
-    fig_height = 5 * n_rows  # 5 inches per row
+    # Create figure with more space between subplots for legends
+    fig_width = 24  # inches, increased for legends
+    fig_height = 6 * n_rows  # 6 inches per row, increased for legends
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_width, fig_height))
     
-    # Flatten axes if only one row
-    if n_rows == 1:
-        axes = [axes]
-    
-    # Flatten axes array for easy indexing
-    axes_flat = axes.flatten() if n_rows > 1 else axes
-    
-    # Get the global min and max rainfall values for consistent color scale
-    all_min = float('inf')
-    all_max = float('-inf')
-    
-    for _, _, gdf in period_gdfs:
-        if len(gdf) > 0:  # Check if the GDF has data
-            min_val = gdf['mean_rain'].min()
-            max_val = gdf['mean_rain'].max()
-            
-            if not np.isnan(min_val) and min_val < all_min:
-                all_min = min_val
-            if not np.isnan(max_val) and max_val > all_max:
-                all_max = max_val
+    # Flatten axes for easy indexing
+    if n_rows == 1 and n_cols == 1:
+        axes = np.array([axes])
+    elif n_rows == 1:
+        axes = np.array([axes])
+    axes_flat = axes.flatten()
     
     # Plot each period
     for i, (year, month, gdf) in enumerate(period_gdfs):
         if i < len(axes_flat):
             ax = axes_flat[i]
             
-            # Plot the GeoDataFrame
-            gdf.plot(column='mean_rain', ax=ax, legend=True if i % n_cols == n_cols-1 else False,
-                    cmap='viridis', edgecolor="black", vmin=all_min, vmax=all_max,
-                    legend_kwds={'shrink': 0.5})
+            # Plot the GeoDataFrame with individual legend
+            gdf.plot(column='mean_rain', ax=ax, legend=True,
+                    cmap='viridis', edgecolor="black",
+                    legend_kwds={'shrink': 0.5, 'aspect': 10})
             
             # Remove axis boxes
             ax.set_axis_off()
             
             # Add title
-            ax.set_title(f"{year}-{month:02d}", fontsize=12)
+            ax.set_title(f"{year}-{month:02d}", fontsize=14)
     
     # Hide any unused subplots
     for j in range(i + 1, len(axes_flat)):
         axes_flat[j].set_visible(False)
     
-    # Add a colorbar to the figure
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    cax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
-    sm = plt.cm.ScalarMappable(cmap='viridis', norm=plt.Normalize(vmin=all_min, vmax=all_max))
-    sm._A = []  # Empty array for the data range
-    cbar = fig.colorbar(sm, cax=cax)
-    cbar.set_label('Mean Rainfall (mm)')
-    
     # Add a main title for the entire figure
     fig.suptitle('Rainfall by Month', fontsize=20, y=0.98)
     
     # Adjust layout
-    plt.tight_layout(rect=[0, 0, 0.9, 0.95])  # [left, bottom, right, top]
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # [left, bottom, right, top]
     
     # Save the figure
     output_path = output_dir / filename
