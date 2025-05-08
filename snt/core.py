@@ -1609,7 +1609,7 @@ def create_subplots_figure(period_gdfs, output_dir, filename):
             
             # Plot the GeoDataFrame with individual legend
             gdf.plot(column='mean_rain', ax=ax, legend=True,
-                    cmap='Blues', edgecolor="black",
+                    cmap='viridis', edgecolor="black",
                     legend_kwds={'shrink': 0.5, 'aspect': 10})
             
             # Remove axis boxes
