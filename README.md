@@ -6,7 +6,8 @@
 
 ## 🛠️ Features
 
-- `concatenate(folder_path)`: Merge multiple Excel files into one DataFrame.
+- `combine_xls(folder_path)`: Merge multiple `.xls` files into one DataFrame.
+- `combine_xlsx(folder_path)`:Merge multiple `.xlsx` files into one DataFrame.
 - `rename(df, mapping_file)`: Rename columns using a mapping Excel file.
 - `compute(df, formula_file)`: Apply row-based computations to generate new variables.
 - `split(df, column_file)`: Convert wide to long format using specified columns.
