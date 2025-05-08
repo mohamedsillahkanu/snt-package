@@ -696,7 +696,7 @@ def subplots(epi_data_path):
 
         columns.sort(key=lambda x: x[1])
 
-        fig, axes = plt.subplots(3, 3, figsize=(24, 15))
+        fig, axes = plt.subplots(2, 5, figsize=(24, 15))
         axes = axes.flatten()
 
         for i in range(len(columns), 9):
@@ -731,8 +731,8 @@ def subplots(epi_data_path):
                 handles=legend_items,
                 fontsize=7,
                 title="Cases/1000",
-                loc='center left',
-                bbox_to_anchor=(1.05, 0.5),
+                loc='upper center',
+                bbox_to_anchor=(0.5, -0.15),
                 frameon=True
             )
 
