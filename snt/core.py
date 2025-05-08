@@ -1289,10 +1289,10 @@ def export_and_interpret(
 
         # Add line plots for the current district after the summary table
         for folder, label in [
-            (crude_trends_folder, "Crude"),
-            (adjusted1_trends_folder, "Adjusted1"),
-            (adjusted2_trends_folder, "Adjusted2"),
-            (adjusted3_trends_folder, "Adjusted3"),
+            (crude_trends_folder, "crude_plots"),
+            (adjusted1_trends_folder, "adjusted1_plots"),
+            (adjusted2_trends_folder, "adjusted2_plots"),
+            (adjusted3_trends_folder, "adjusted3_plots"),
         ]:
             file_path = Path(folder) / f"{district}.png"
             if file_path.exists():
@@ -1314,7 +1314,7 @@ def export_and_interpret(
     if os.path.exists(trends_folder):
         for file in sorted(Path(trends_folder).glob("*.png")):
             district_name = file.stem
-            caption = f"Adjusted3 incidence trends in {district_name}"
+            caption = f"Incidence trends in {district_name}"
             add_figure(doc, str(file), caption, fig_num)
             fig_num += 1
 
