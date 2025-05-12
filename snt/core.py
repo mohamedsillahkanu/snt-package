@@ -1426,7 +1426,7 @@ def rainfall(start_date, end_date, output_dir=None):
     
     # Load the shapefile
     try:
-        gdf = gpd.read_file(shapefile_path)
+        gdf = gpd.read_file("input_files/routine/shapefile/Chiefdom2021.shp")
     except Exception as e:
         raise ValueError(f"Error loading shapefile: {str(e)}")
     
