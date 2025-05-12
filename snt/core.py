@@ -631,9 +631,8 @@ def individual_plots(epi_data_path,
             missing_kwds={'color': 'lightgrey', 'edgecolor': 'white', 'linewidth': 0.3}
         )
 
-        gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
-        ax.set_title(year, fontsize=11)
-        ax.axis("off")
+        gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)      
+     
 
         legend_elements = [
             Patch(facecolor=cmap(norm(bin_start)), edgecolor='black', label=label)
