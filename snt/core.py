@@ -631,8 +631,9 @@ def individual_plots(epi_data_path,
             missing_kwds={'color': 'lightgrey', 'edgecolor': 'white', 'linewidth': 0.3}
         )
 
-        district_boundaries = gdf.dissolve(by='FIRST_DNAM')
-        district_boundaries.boundary.plot(ax=ax, color='gray', linewidth=1.0, zorder=2)
+        gdf.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1)
+        ax.set_title(year, fontsize=11)
+        ax.axis("off")
 
         legend_elements = [
             Patch(facecolor=cmap(norm(bin_start)), edgecolor='black', label=label)
