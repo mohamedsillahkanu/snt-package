@@ -575,8 +575,7 @@ def merge_data_with_shapefile(df1, shapefile):
     gdf = shapefile.merge(df1, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
     return gdf
 
-def individual_plots(epi_data_path,
-                     shapefile_path,
+def individual_plots(
                      prefixes=['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_'],
                      colormap='RdYlBu_r',
                      edge_color='gray',
@@ -589,8 +588,8 @@ def individual_plots(epi_data_path,
     """
 
     # Load input data
-    df1 = pd.read_excel(epi_data_path)
-    shapefile = gpd.read_file(shapefile_path)
+    df1 = pd.read_excel("input_files/others/2024_snt_data.xlsx")
+    shapefile = gpd.read_file("input_files/routine/shapefile/Chiefdom2021.shp")
     os.makedirs(output_root, exist_ok=True)
 
     # Merge data
