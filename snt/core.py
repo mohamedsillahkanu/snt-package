@@ -1368,7 +1368,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 
-def rainfall(start_date, end_date, shapefile_path, output_dir=None):
+def rainfall(start_date, end_date, output_dir=None):
     """
     Calculate mean rainfall for a given shapefile over a specified date range,
     save data to Excel, and generate maps for each time period.
@@ -1411,7 +1411,7 @@ def rainfall(start_date, end_date, shapefile_path, output_dir=None):
     maps_dir.mkdir(parents=True, exist_ok=True)
     
     # Check if shapefile exists and has required components
-    shp_path = Path(shapefile_path)
+    shp_path = Path("input_files/routine/shapefile/Chiefdom2021.shp")
     if not shp_path.exists():
         raise FileNotFoundError(f"Shapefile not found: {shapefile_path}")
     
