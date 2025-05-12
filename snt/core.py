@@ -69,8 +69,8 @@ def combine_csv(file_path):
     return combined_df
 
 
-def rename(df, path):
-    name_map = pd.read_excel(path)
+def rename(df):
+    name_map = pd.read_excel("input_files/others/old_new_rename.xlsx")
     rename_dict = dict(zip(name_map.iloc[:, 0], name_map.iloc[:, 1]))
     return df.rename(columns=rename_dict)
     
