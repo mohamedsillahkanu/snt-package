@@ -1351,7 +1351,136 @@ def export_and_interpret(
     doc.save(output_file)
     print(f"\n✅ Report saved to: {output_file}")  
 
-####
+
+
+#### District Chiefdom Maps
+
+import os
+import re
+import numpy as np
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from matplotlib.colors import BoundaryNorm
+from matplotlib.patches import Patch
+
+def merge_data_with_shapefile(data, shapefile):
+    return shapefile.merge(data, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
+
+def district_chiefdom_map(
+    prefixes=['crude_incidence_', 'adjusted1_', 'adjusted2_', 'adjusted3_'],
+    colormap='RdYlBu_r',
+    edge_color='gray',
+    bins=[0, 50, 100, 250, 450, 700, 1000, float('inf')],
+    bin_labels=['<50', '50-100', '100-250', '250-450', '450-700', '700-1000', '>1000'],
+    output_root='epi_maps'
+):
+    """
+    Generates district-level maps for each column matching the specified prefixes and a 4-digit year.
+    Saves maps per district into subfolders named after each prefix inside 'epi_maps'.
+    """
+
+    # Load data and shapefile
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
+    shapefile = gpd.read_file("input_files/routine/shapefile/Chiefdom2021.shp")
+    os.makedirs(output_root, exist_ok=True)
+
+    # Merge once
+    gdf = merge_data_with_shapefile(df, shapefile)
+
+    # Find valid columns: prefix + 4-digit year
+    pattern = re.compile(r'_(\d{4})$')
+    columns_to_plot = []
+    for col in gdf.columns:
+        for prefix in prefixes:
+            if col.startswith(prefix) and pattern.search(col):
+                columns_to_plot.append((col, prefix))
+                break
+
+    if not columns_to_plot:
+        print("No valid columns found.")
+        return gdf
+
+    # Define colormap
+    cmap = plt.cm.get_cmap(colormap, len(bins) - 1)
+    norm = BoundaryNorm(bins, ncolors=cmap.N)
+
+    # Loop through columns
+    for column_name, prefix in columns_to_plot:
+        title_prefix = column_name.replace('_', ' ').title()
+        output_folder = os.path.join(output_root, prefix.rstrip('_'))
+        os.makedirs(output_folder, exist_ok=True)
+
+        for district in gdf['FIRST_DNAM'].dropna().unique():
+            gdf_district = gdf[gdf['FIRST_DNAM'] == district]
+            if column_name not in gdf_district.columns or gdf_district[column_name].dropna().empty:
+                continue
+
+            gdf_district[column_name] = gdf_district[column_name].round().astype(int)
+
+            fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
+
+            gdf_district.plot(
+                column=column_name,
+                cmap=cmap,
+                norm=norm,
+                edgecolor=edge_color,
+                linewidth=0.5,
+                legend=False,
+                ax=ax,
+                missing_kwds={'color': 'lightgrey', 'edgecolor': 'white', 'linewidth': 0.5}
+            )
+
+            # Draw district boundary
+            gdf_district.dissolve(by="FIRST_DNAM").boundary.plot(ax=ax, color="black", linewidth=1.0)
+
+            # Add FIRST_CHIE labels with overlap handling
+            placed_centroids = []
+            for _, row in gdf_district.iterrows():
+                if row['geometry'] is not None and not row['geometry'].is_empty:
+                    centroid = row['geometry'].centroid
+                    label = str(row['FIRST_CHIE'])
+                    too_close = any(np.sqrt((centroid.x - x)**2 + (centroid.y - y)**2) < 0.1 for x, y in placed_centroids)
+                    placed_centroids.append((centroid.x, centroid.y))
+                    ax.text(
+                        centroid.x, centroid.y, label,
+                        fontsize=5,
+                        ha='center', va='center',
+                        color='black',
+                        rotation=45 if too_close else 0,
+                        rotation_mode='anchor'
+                    )
+
+            # Add legend at bottom
+            legend_elements = [
+                Patch(facecolor=cmap(norm(bins[i])), edgecolor='black', label=bin_labels[i])
+                for i in range(len(bins) - 1)
+            ]
+
+            ax.legend(
+                handles=legend_elements,
+                loc='lower center',
+                bbox_to_anchor=(0.5, -0.15),
+                ncol=4,
+                fontsize=7,
+                title="Cases per 1000",
+                title_fontsize=8,
+                frameon=True
+            )
+
+            ax.set_title(f"{title_prefix}\n{district}", fontsize=13, fontweight='bold', pad=10)
+            ax.axis("off")
+            fig.subplots_adjust(bottom=0.2)
+
+            # Save
+            filename = os.path.join(output_folder, f"{district.replace(' ', '_')}.png")
+            plt.savefig(filename, dpi=300, bbox_inches="tight")
+            plt.close()
+            print(f"Saved: {filename}")
+
+    return gdf
+
+#### Rainfall
 import geopandas as gpd
 import rasterio
 import rasterio.mask
