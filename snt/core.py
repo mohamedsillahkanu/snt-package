@@ -1418,7 +1418,7 @@ def district_chiefdom_map(
 
             gdf_district[column_name] = gdf_district[column_name].round().astype(int)
 
-            fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
+            fig, ax = plt.subplots(figsize=(10, 10), dpi=300)
 
             gdf_district.plot(
                 column=column_name,
@@ -1444,7 +1444,7 @@ def district_chiefdom_map(
                     placed_centroids.append((centroid.x, centroid.y))
                     ax.text(
                         centroid.x, centroid.y, label,
-                        fontsize=5,
+                        fontsize=3,
                         ha='center', va='center',
                         color='black',
                         rotation=45 if too_close else 0,
