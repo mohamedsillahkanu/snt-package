@@ -770,7 +770,7 @@ def epi_trends(output_folder='epi_lineplots'):
         chiefdoms = df_district['FIRST_CHIE'].dropna().unique()
         n = len(chiefdoms)
 
-        n_cols = 3
+        n_cols = 4
         n_rows = int(np.ceil(n / n_cols))
 
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), sharex=True, sharey=True)
@@ -846,7 +846,7 @@ def crude_trends(output_folder='crude_plots'):
         chiefdoms = df_district['FIRST_CHIE'].dropna().unique()
         n = len(chiefdoms)
 
-        n_cols = 3
+        n_cols = 4
         n_rows = int(np.ceil(n / n_cols))
 
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 6, n_rows * 5), sharex=False, sharey=True)
@@ -935,7 +935,7 @@ def adjusted1_trends(output_folder='adjusted1_plots'):
         chiefdoms = df_district['FIRST_CHIE'].dropna().unique()
         n = len(chiefdoms)
 
-        n_cols = 3
+        n_cols = 4
         n_rows = int(np.ceil(n / n_cols))
 
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), sharex=False, sharey=True)
@@ -1006,7 +1006,7 @@ def adjusted2_trends(output_folder='adjusted2_plots'):
         chiefdoms = df_district['FIRST_CHIE'].dropna().unique()
         n = len(chiefdoms)
 
-        n_cols = 3
+        n_cols = 4
         n_rows = int(np.ceil(n / n_cols))
 
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), sharex=False, sharey=True)
@@ -1074,7 +1074,7 @@ def adjusted3_trends(output_folder='adjusted3_plots'):
         chiefdoms = df_district['FIRST_CHIE'].dropna().unique()
         n = len(chiefdoms)
 
-        n_cols = 3
+        n_cols = 4
         n_rows = int(np.ceil(n / n_cols))
 
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), sharex=False, sharey=True)
