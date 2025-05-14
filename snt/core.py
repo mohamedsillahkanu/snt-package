@@ -1228,12 +1228,13 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
         main_title,
         fontsize=12, fontweight='bold', pad=10, loc='center'
     )
-
+    ax.set_xlabel("Year", fontsize=10, fontweight='bold')
+    ax.set_ylabel("Annual Parasite Incidence", fontsize=10, fontweight='bold')
     ax.legend(fontsize=9)
     
     # Set subtitle below the main title, inside the plot
     ax.text(
-        0.5, 0.92, subtitle_text,  # slightly above the plot, below the main title
+        0.5, 0.99, subtitle_text,  # slightly above the plot, below the main title
         transform=ax.transAxes,
         fontsize=9, fontweight='bold',
         ha='center', va='bottom',
