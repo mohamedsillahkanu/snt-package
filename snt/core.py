@@ -1143,21 +1143,20 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     avg_df['Year'] = avg_df['Year'].str.extract(r'(\d{4})').astype(int)
     avg_df = avg_df.sort_values('Year').reset_index(drop=True)
 
-    # Step 3: Compute year-on-year % change
-    avg_df['YoY_Change'] = avg_df['National_Crude_Incidence'].pct_change() * 100
-    avg_df['YoY_Label'] = avg_df['YoY_Change'].apply(
-        lambda x: "" if pd.isna(x) else f"{x:+.0f}%"
-    )
-    avg_df.loc[0, 'YoY_Label'] = "0%"  # For the first year
+    # Step 3: Compute overall change (first to last year)
+    y_start = avg_df['National_Crude_Incidence'].iloc[0]
+    y_end = avg_df['National_Crude_Incidence'].iloc[-1]
+    overall_change = ((y_end - y_start) / y_start) * 100
+    summary_text = f"Change ({avg_df['Year'].iloc[0]}→{avg_df['Year'].iloc[-1]}): {overall_change:+.1f}%"
 
-    # Step 4: Plot
-    plt.figure(figsize=(10, 10))
+    # Step 4: Plot setup
+    plt.figure(figsize=(10, 6))
     plt.plot(
         avg_df['Year'],
         avg_df['National_Crude_Incidence'],
         marker='o',
         color='darkblue',
-        linewidth=2,
+        linewidth=2.5,
         label='National Average'
     )
 
@@ -1167,44 +1166,69 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
         trend_line = np.poly1d(fit)(avg_df['Year'])
         plt.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
 
-    # Annotate each point with year-on-year % change
+    # Annotate actual incidence values above each point
     for i, row in avg_df.iterrows():
         year = row['Year']
         value = row['National_Crude_Incidence']
-        label = row['YoY_Label']
         if pd.notna(value):
-            plt.text(year, value + 2, label, fontsize=9, fontweight='bold', ha='center', color='black')
+            plt.text(
+                year, value + 4, f"{value:.1f}",
+                fontsize=10, fontweight='bold',
+                ha='center', va='bottom',
+                bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
+            )
 
-    # Summary annotation for overall change from first to last year
-    if len(avg_df) >= 2:
-        overall_change = ((avg_df['National_Crude_Incidence'].iloc[-1] - avg_df['National_Crude_Incidence'].iloc[0]) /
-                          avg_df['National_Crude_Incidence'].iloc[0]) * 100
-        summary_text = f"Change ({avg_df['Year'].iloc[0]}→{avg_df['Year'].iloc[-1]}): {overall_change:+.1f}%"
-    else:
-        summary_text = "Insufficient data for summary"
+    # Annotate % change between points
+    for i in range(1, len(avg_df)):
+        y1 = avg_df.loc[i - 1, 'National_Crude_Incidence']
+        y2 = avg_df.loc[i, 'National_Crude_Incidence']
+        x1 = avg_df.loc[i - 1, 'Year']
+        x2 = avg_df.loc[i, 'Year']
 
+        if pd.notna(y1) and pd.notna(y2):
+            x_mid = (x1 + x2) / 2
+            y_mid = (y1 + y2) / 2
+            pct_change = ((y2 - y1) / y1) * 100
+            label = f"{pct_change:+.0f}%"
+
+            plt.text(
+                x_mid, y_mid + 2, label,
+                fontsize=9, fontweight='bold',
+                ha='center', va='bottom',
+                bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
+            )
+
+    # Add summary annotation inside top-right
     x_pos = avg_df['Year'].max() - 1
-    y_pos = avg_df['National_Crude_Incidence'].max()
-    plt.text(x_pos, y_pos, summary_text,
-             fontsize=11, fontweight='bold',
-             ha='left', va='top',
-             bbox=dict(facecolor='white', edgecolor='black', boxstyle='round'))
+    y_pos = avg_df['National_Crude_Incidence'].max() * 0.95
+    plt.text(
+        x_pos, y_pos, summary_text,
+        fontsize=11, fontweight='bold',
+        ha='left', va='top',
+        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round')
+    )
 
-    # Final formatting
-    plt.title("National Crude Incidence Trend (Year-on-Year % Change)", fontsize=14, fontweight='bold')
+    # Set x-axis and y-axis ticks
+    plt.xticks(ticks=list(range(2015, 2025)), fontsize=10, fontweight='bold')
+    y_min = 0
+    y_max = np.ceil(avg_df['National_Crude_Incidence'].max() / 5) * 5
+    plt.yticks(np.arange(y_min, y_max + 1, 5), fontsize=10, fontweight='bold')
+
+    # Labels and styling
+    plt.title("National Crude Incidence Trend (2015–2024)", fontsize=14, fontweight='bold')
     plt.xlabel("Year", fontsize=12, fontweight='bold')
     plt.ylabel("Crude Incidence", fontsize=12, fontweight='bold')
-    plt.xticks(fontsize=10, fontweight='bold')
-    plt.yticks(fontsize=10, fontweight='bold')
     plt.grid(True)
     plt.legend(fontsize=10)
     plt.tight_layout()
-    plt.xlim(avg_df['Year'].min(), avg_df['Year'].max() + 2)
+    plt.ylim(y_min, y_max + 5)
+    plt.xlim(2015, 2024)
 
-    # Save
+    # Save high-resolution image
     plt.savefig(output_path, dpi=400, bbox_inches='tight')
     plt.close()
     print(f"[Saved] {output_path}")
+
 
 
 ## Word documents
