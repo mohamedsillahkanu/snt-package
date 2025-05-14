@@ -1132,6 +1132,7 @@ def adjusted3_trends(output_folder='adjusted3_plots'):
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import re
 
 def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
@@ -1140,19 +1141,27 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     pattern = re.compile(r'^crude_incidence_(\d{4})$')
     year_cols = [col for col in df.columns if pattern.match(col)]
 
-    # Step 2: Compute national averages per year (ignoring NaNs)
+    # Step 2: Compute national averages per year
     averages = df[year_cols].mean(axis=0)
     avg_df = averages.reset_index()
     avg_df.columns = ['Year', 'National_Crude_Incidence']
     avg_df['Year'] = avg_df['Year'].str.extract(r'(\d{4})').astype(int)
+    avg_df = avg_df.sort_values('Year').reset_index(drop=True)
 
-    # Step 3: Plot
-    plt.figure(figsize=(8, 5))
+    # Step 3: Compute year-on-year % change
+    avg_df['YoY_Change'] = avg_df['National_Crude_Incidence'].pct_change() * 100
+    avg_df['YoY_Label'] = avg_df['YoY_Change'].apply(
+        lambda x: "" if pd.isna(x) else f"{x:+.0f}%"
+    )
+    avg_df.loc[0, 'YoY_Label'] = "0%"  # For the first year
+
+    # Step 4: Plot
+    plt.figure(figsize=(10, 6))
     plt.plot(
         avg_df['Year'],
         avg_df['National_Crude_Incidence'],
         marker='o',
-        color='darkred',
+        color='darkblue',
         linewidth=2,
         label='National Average'
     )
@@ -1163,8 +1172,31 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
         trend_line = np.poly1d(fit)(avg_df['Year'])
         plt.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
 
-    # Format
-    plt.title("National Crude Incidence Trend", fontsize=14, fontweight='bold')
+    # Annotate each point with year-on-year % change
+    for i, row in avg_df.iterrows():
+        year = row['Year']
+        value = row['National_Crude_Incidence']
+        label = row['YoY_Label']
+        if pd.notna(value):
+            plt.text(year, value + 2, label, fontsize=9, fontweight='bold', ha='center', color='black')
+
+    # Summary annotation for overall change from first to last year
+    if len(avg_df) >= 2:
+        overall_change = ((avg_df['National_Crude_Incidence'].iloc[-1] - avg_df['National_Crude_Incidence'].iloc[0]) /
+                          avg_df['National_Crude_Incidence'].iloc[0]) * 100
+        summary_text = f"Change ({avg_df['Year'].iloc[0]}→{avg_df['Year'].iloc[-1]}): {overall_change:+.1f}%"
+    else:
+        summary_text = "Insufficient data for summary"
+
+    x_pos = avg_df['Year'].max() + 0.5
+    y_pos = avg_df['National_Crude_Incidence'].max()
+    plt.text(x_pos, y_pos, summary_text,
+             fontsize=11, fontweight='bold',
+             ha='left', va='top',
+             bbox=dict(facecolor='white', edgecolor='black', boxstyle='round'))
+
+    # Final formatting
+    plt.title("National Crude Incidence Trend (Year-on-Year % Change)", fontsize=14, fontweight='bold')
     plt.xlabel("Year", fontsize=12, fontweight='bold')
     plt.ylabel("Crude Incidence", fontsize=12, fontweight='bold')
     plt.xticks(fontsize=10, fontweight='bold')
@@ -1172,12 +1204,12 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     plt.grid(True)
     plt.legend(fontsize=10)
     plt.tight_layout()
+    plt.xlim(avg_df['Year'].min(), avg_df['Year'].max() + 2)
 
     # Save
     plt.savefig(output_path, dpi=400, bbox_inches='tight')
     plt.close()
     print(f"[Saved] {output_path}")
-
 
 
 ## Word documents
