@@ -880,10 +880,13 @@ def crude_trends(output_folder='crude_plots'):
             ax.set_xlabel("Year", fontsize=10, fontweight='bold')
             ax.set_ylabel("Incidence", fontsize=10, fontweight='bold')
             ax.grid(True)
-            ax.tick_params(axis='x', rotation=45)
+            ax.tick_params(axis='x', rotation=0)
             ax.tick_params(axis='both', labelsize=9)
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
+
+        for label in ax.get_xticklabels() + ax.get_yticklabels():
+        label.set_fontweight('bold')
 
         # Turn off unused subplots
         for j in range(i + 1, len(axes)):
@@ -892,7 +895,7 @@ def crude_trends(output_folder='crude_plots'):
         # Add shared legend
         handles, labels = axes[0].get_legend_handles_labels()
         if handles:
-            fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4, fontsize=10, title_fontsize=11)
+            fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4, fontsize=10, title_fontsize=11, prop={'weight': 'bold'})
 
         fig.suptitle(f"Crude Incidence Trends by Chiefdom - {district}", fontsize=16, fontweight='bold')
         plt.tight_layout(rect=[0, 0.05, 1, 0.95])
