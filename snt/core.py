@@ -1226,17 +1226,17 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     # Set main title
     ax.set_title(
         main_title,
-        fontsize=12, fontweight='bold', pad=10, loc='left'
+        fontsize=12, fontweight='bold', pad=10, loc='center'
     )
 
     ax.legend(fontsize=9)
     
     # Set subtitle below the main title, inside the plot
     ax.text(
-        0.01, 0.92, subtitle_text,  # slightly above the plot, below the main title
+        0.5, 0.92, subtitle_text,  # slightly above the plot, below the main title
         transform=ax.transAxes,
         fontsize=9, fontweight='bold',
-        ha='right', va='bottom',
+        ha='center', va='bottom',
         bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
     )
 
