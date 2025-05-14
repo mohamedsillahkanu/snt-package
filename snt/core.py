@@ -904,11 +904,6 @@ def crude_trends(output_folder='crude_plots'):
 
     return df
 
-
-
-
-
-
 ## Adjusted1 trend
 
 import os
@@ -1156,7 +1151,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     avg_df.loc[0, 'YoY_Label'] = "0%"  # For the first year
 
     # Step 4: Plot
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(10, 10))
     plt.plot(
         avg_df['Year'],
         avg_df['National_Crude_Incidence'],
@@ -1188,7 +1183,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     else:
         summary_text = "Insufficient data for summary"
 
-    x_pos = avg_df['Year'].max() + 0.5
+    x_pos = avg_df['Year'].max() - 1
     y_pos = avg_df['National_Crude_Incidence'].max()
     plt.text(x_pos, y_pos, summary_text,
              fontsize=11, fontweight='bold',
