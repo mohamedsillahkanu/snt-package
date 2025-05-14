@@ -1156,7 +1156,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
         marker='o',
         color='darkblue',
         linewidth=2.5,
-        label='National Average'
+        label='API'
     )
 
     # Trend line
@@ -1220,19 +1220,15 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     ax.set_ylim(y_min, y_max + step)
 
     # Labels and grid
-    ax.set_title("National Crude Incidence Trend (2015–2024)", fontsize=12, fontweight='bold', pad=20)
-    ax.set_xlabel("Year", fontsize=10, fontweight='bold')
-    ax.set_ylabel("Crude Incidence", fontsize=10, fontweight='bold')
-    ax.grid(True)
-    ax.legend(fontsize=9)
+    # Combine title and subtitle using newline
+    main_title = "Annual Parasite Incidence Trend (2015–2024)"
+    subtitle_text = f"Change from {avg_df['Year'].iloc[0]} to {avg_df['Year'].iloc[-1]}: {overall_change:+.1f}%"
 
-    # Subtitle as a box above the plot
-    fig.text(
-        0.5, 0.92, subtitle_text,
-        fontsize=9, fontweight='bold',
-        ha='center',
-        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
-    )
+    # Set title and subtitle together with box around subtitle only
+    ax.set_title(
+    f"{main_title}\n",  # top line
+    fontsize=12, fontweight='bold', pad=10, loc='center'
+)
 
     # Final layout
     plt.tight_layout(rect=[0, 0, 1, 0.90])
