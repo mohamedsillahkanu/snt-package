@@ -795,7 +795,6 @@ def epi_trends(output_folder='epi_lineplots'):
                 ax.plot(years, values, marker='o', label=prefix.replace('_', ' ').title(), color=color)
 
             ax.set_title(chiefdom, fontsize=10)
-            ax.grid(True)
             ax.tick_params(axis='x', rotation=45)
 
         # Turn off unused axes
@@ -1249,6 +1248,139 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     plt.savefig(output_path, dpi=400, bbox_inches='tight')
     plt.close()
     print(f"[Saved] {output_path}")
+
+### National adjusted2
+def plot_national_adjusted2_trend(output_path='national_adjusted2_incidence_trend.png'):
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
+    pattern = re.compile(r'^adjusted2_(\d{4})$')
+    year_cols = [col for col in df.columns if pattern.match(col)]
+
+    averages = df[year_cols].mean(axis=0)
+    avg_df = averages.reset_index()
+    avg_df.columns = ['Year', 'National_Adjusted2_Incidence']
+    avg_df['Year'] = avg_df['Year'].str.extract(r'(\d{4})').astype(int)
+    avg_df = avg_df.sort_values('Year').reset_index(drop=True)
+
+    y_start = avg_df['National_Adjusted2_Incidence'].iloc[0]
+    y_end = avg_df['National_Adjusted2_Incidence'].iloc[-1]
+    overall_change = ((y_end - y_start) / y_start) * 100
+    subtitle_text = f"Change from {avg_df['Year'].iloc[0]} to {avg_df['Year'].iloc[-1]}: {overall_change:+.1f}%"
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(avg_df['Year'], avg_df['National_Adjusted2_Incidence'], marker='o', color='darkgreen', linewidth=2.5, label='API')
+
+    if len(avg_df) >= 2:
+        fit = np.polyfit(avg_df['Year'], avg_df['National_Adjusted2_Incidence'], 1)
+        trend_line = np.poly1d(fit)(avg_df['Year'])
+        ax.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
+
+    for i, row in avg_df.iterrows():
+        if pd.notna(row['National_Adjusted2_Incidence']):
+            ax.text(row['Year'], row['National_Adjusted2_Incidence'] + 2, f"{row['National_Adjusted2_Incidence']:.1f}",
+                    fontsize=9, fontweight='bold', ha='center', va='bottom',
+                    bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+
+    for i in range(1, len(avg_df)):
+        y1, y2 = avg_df.loc[i - 1, 'National_Adjusted2_Incidence'], avg_df.loc[i, 'National_Adjusted2_Incidence']
+        x1, x2 = avg_df.loc[i - 1, 'Year'], avg_df.loc[i, 'Year']
+        if pd.notna(y1) and pd.notna(y2):
+            x_mid = (x1 + x2) / 2
+            y_mid = (y1 + y2) / 2
+            pct_change = ((y2 - y1) / y1) * 100
+            ax.text(x_mid, y_mid + 2, f"{pct_change:+.0f}%", fontsize=8, fontweight='bold', ha='center',
+                    va='bottom', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+
+    ax.set_xticks(list(range(2015, 2025)))
+    ax.set_xlim(2015, 2024)
+    ax.tick_params(axis='x', labelsize=9)
+    ax.tick_params(axis='y', labelsize=9)
+
+    y_values = avg_df['National_Adjusted2_Incidence']
+    y_min, y_max = np.floor(y_values.min() / 5) * 5, np.ceil(y_values.max() / 5) * 5
+    step = 5 if (y_max - y_min) <= 25 else (10 if (y_max - y_min) <= 50 else 20)
+
+    ax.set_yticks(np.arange(y_min, y_max + step, step))
+    ax.set_ylim(y_min, y_max + step)
+
+    ax.set_title("Adjusted2 Incidence Trend (2015–2024)", fontsize=12, fontweight='bold', pad=10)
+    ax.set_xlabel("Year", fontsize=10, fontweight='bold')
+    ax.set_ylabel("Adjusted2 Incidence", fontsize=10, fontweight='bold')
+    ax.legend(fontsize=9)
+    ax.text(0.5, 0.95, subtitle_text, transform=ax.transAxes, fontsize=9, fontweight='bold',
+            ha='center', va='bottom', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+
+    plt.tight_layout(rect=[0, 0, 1, 0.90])
+    plt.savefig(output_path, dpi=400, bbox_inches='tight')
+    plt.close()
+    print(f"[Saved] {output_path}")
+
+
+### National adjusted3
+
+def plot_national_adjusted3_trend(output_path='national_adjusted3_incidence_trend.png'):
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
+    pattern = re.compile(r'^adjusted3_(\d{4})$')
+    year_cols = [col for col in df.columns if pattern.match(col)]
+
+    averages = df[year_cols].mean(axis=0)
+    avg_df = averages.reset_index()
+    avg_df.columns = ['Year', 'National_Adjusted3_Incidence']
+    avg_df['Year'] = avg_df['Year'].str.extract(r'(\d{4})').astype(int)
+    avg_df = avg_df.sort_values('Year').reset_index(drop=True)
+
+    y_start = avg_df['National_Adjusted3_Incidence'].iloc[0]
+    y_end = avg_df['National_Adjusted3_Incidence'].iloc[-1]
+    overall_change = ((y_end - y_start) / y_start) * 100
+    subtitle_text = f"Change from {avg_df['Year'].iloc[0]} to {avg_df['Year'].iloc[-1]}: {overall_change:+.1f}%"
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(avg_df['Year'], avg_df['National_Adjusted3_Incidence'], marker='o', color='darkred', linewidth=2.5, label='API')
+
+    if len(avg_df) >= 2:
+        fit = np.polyfit(avg_df['Year'], avg_df['National_Adjusted3_Incidence'], 1)
+        trend_line = np.poly1d(fit)(avg_df['Year'])
+        ax.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
+
+    for i, row in avg_df.iterrows():
+        if pd.notna(row['National_Adjusted3_Incidence']):
+            ax.text(row['Year'], row['National_Adjusted3_Incidence'] + 2, f"{row['National_Adjusted3_Incidence']:.1f}",
+                    fontsize=9, fontweight='bold', ha='center', va='bottom',
+                    bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+
+    for i in range(1, len(avg_df)):
+        y1, y2 = avg_df.loc[i - 1, 'National_Adjusted3_Incidence'], avg_df.loc[i, 'National_Adjusted3_Incidence']
+        x1, x2 = avg_df.loc[i - 1, 'Year'], avg_df.loc[i, 'Year']
+        if pd.notna(y1) and pd.notna(y2):
+            x_mid = (x1 + x2) / 2
+            y_mid = (y1 + y2) / 2
+            pct_change = ((y2 - y1) / y1) * 100
+            ax.text(x_mid, y_mid + 2, f"{pct_change:+.0f}%", fontsize=8, fontweight='bold', ha='center',
+                    va='bottom', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+
+    ax.set_xticks(list(range(2015, 2025)))
+    ax.set_xlim(2015, 2024)
+    ax.tick_params(axis='x', labelsize=9)
+    ax.tick_params(axis='y', labelsize=9)
+
+    y_values = avg_df['National_Adjusted3_Incidence']
+    y_min, y_max = np.floor(y_values.min() / 5) * 5, np.ceil(y_values.max() / 5) * 5
+    step = 5 if (y_max - y_min) <= 25 else (10 if (y_max - y_min) <= 50 else 20)
+
+    ax.set_yticks(np.arange(y_min, y_max + step, step))
+    ax.set_ylim(y_min, y_max + step)
+
+    ax.set_title("Adjusted3 Incidence Trend (2015–2024)", fontsize=12, fontweight='bold', pad=10)
+    ax.set_xlabel("Year", fontsize=10, fontweight='bold')
+    ax.set_ylabel("Adjusted3 Incidence", fontsize=10, fontweight='bold')
+    ax.legend(fontsize=9)
+    ax.text(0.5, 0.95, subtitle_text, transform=ax.transAxes, fontsize=9, fontweight='bold',
+            ha='center', va='bottom', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
+
+    plt.tight_layout(rect=[0, 0, 1, 0.90])
+    plt.savefig(output_path, dpi=400, bbox_inches='tight')
+    plt.close()
+    print(f"[Saved] {output_path}")
+
 
 
 
