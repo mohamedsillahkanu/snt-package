@@ -1219,16 +1219,24 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     ax.set_yticks(np.arange(y_min, y_max + step, step))
     ax.set_ylim(y_min, y_max + step)
 
-    # Labels and grid
-    # Combine title and subtitle using newline
+    # Main title
     main_title = "Annual Parasite Incidence Trend (2015–2024)"
     subtitle_text = f"Change from {avg_df['Year'].iloc[0]} to {avg_df['Year'].iloc[-1]}: {overall_change:+.1f}%"
-
-    # Set title and subtitle together with box around subtitle only
+    
+    # Set main title
     ax.set_title(
-    f"{main_title}\n",  # top line
-    fontsize=12, fontweight='bold', pad=10, loc='center'
-)
+        main_title,
+        fontsize=12, fontweight='bold', pad=10, loc='center'
+    )
+    
+    # Set subtitle below the main title, inside the plot
+    ax.text(
+        0.5, 1.02, subtitle_text,  # slightly above the plot, below the main title
+        transform=ax.transAxes,
+        fontsize=9, fontweight='bold',
+        ha='center', va='bottom',
+        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
+    )
 
     # Final layout
     plt.tight_layout(rect=[0, 0, 1, 0.90])
