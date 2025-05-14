@@ -1234,7 +1234,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
         0.5, 1.02, subtitle_text,  # slightly above the plot, below the main title
         transform=ax.transAxes,
         fontsize=9, fontweight='bold',
-        ha='center', va='bottom',
+        ha='right', va='bottom',
         bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
     )
 
