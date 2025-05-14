@@ -1124,15 +1124,13 @@ def adjusted3_trends(output_folder='adjusted3_plots'):
 
 
 ### National crude trends
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import re
 
-def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
+def plot_national_crude_trend(df, output_path='national_crude_incidence_trend.png'):
     # Step 1: Identify crude incidence year columns
-    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
     pattern = re.compile(r'^crude_incidence_(\d{4})$')
     year_cols = [col for col in df.columns if pattern.match(col)]
 
@@ -1166,7 +1164,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
         trend_line = np.poly1d(fit)(avg_df['Year'])
         plt.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
 
-    # Annotate actual incidence values above each point
+    # Annotate crude incidence values above each point
     for i, row in avg_df.iterrows():
         year = row['Year']
         value = row['National_Crude_Incidence']
@@ -1178,7 +1176,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
                 bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
             )
 
-    # Annotate % change between points
+    # Annotate % change between points (along lines)
     for i in range(1, len(avg_df)):
         y1 = avg_df.loc[i - 1, 'National_Crude_Incidence']
         y2 = avg_df.loc[i, 'National_Crude_Incidence']
@@ -1210,26 +1208,37 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
 
     # Set x-axis and y-axis ticks
     plt.xticks(ticks=list(range(2015, 2025)), fontsize=10, fontweight='bold')
-    y_min = 0
-    y_max = np.ceil(avg_df['National_Crude_Incidence'].max() / 5) * 5
-    plt.yticks(np.arange(y_min, y_max + 1, 5), fontsize=10, fontweight='bold')
 
-    # Labels and styling
+    # Auto-adjust Y-axis tick spacing
+    y_values = avg_df['National_Crude_Incidence']
+    y_min = 0
+    y_max = np.ceil(y_values.max() / 5) * 5
+    y_range = y_max - y_min
+
+    # Dynamically choose tick step based on range
+    if y_range <= 25:
+        step = 5
+    elif y_range <= 50:
+        step = 10
+    else:
+        step = 20
+
+    plt.yticks(np.arange(y_min, y_max + step, step), fontsize=10, fontweight='bold')
+    plt.ylim(y_min, y_max + step)
+
+    # Final formatting
     plt.title("National Crude Incidence Trend (2015–2024)", fontsize=14, fontweight='bold')
     plt.xlabel("Year", fontsize=12, fontweight='bold')
     plt.ylabel("Crude Incidence", fontsize=12, fontweight='bold')
     plt.grid(True)
     plt.legend(fontsize=10)
     plt.tight_layout()
-    plt.ylim(y_min, y_max + 5)
     plt.xlim(2015, 2024)
 
-    # Save high-resolution image
+    # Save high-res image
     plt.savefig(output_path, dpi=400, bbox_inches='tight')
     plt.close()
     print(f"[Saved] {output_path}")
-
-
 
 ## Word documents
 import os
