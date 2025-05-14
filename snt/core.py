@@ -1129,8 +1129,9 @@ import pandas as pd
 import numpy as np
 import re
 
-def plot_national_crude_trend(df, output_path='national_crude_incidence_trend.png'):
+def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     # Step 1: Identify crude incidence year columns
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
     pattern = re.compile(r'^crude_incidence_(\d{4})$')
     year_cols = [col for col in df.columns if pattern.match(col)]
 
