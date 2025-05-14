@@ -1233,7 +1233,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     
     # Set subtitle below the main title, inside the plot
     ax.text(
-        0.5, 1.02, subtitle_text,  # slightly above the plot, below the main title
+        0.01, 0.92, subtitle_text,  # slightly above the plot, below the main title
         transform=ax.transAxes,
         fontsize=9, fontweight='bold',
         ha='right', va='bottom',
