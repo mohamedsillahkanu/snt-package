@@ -1129,9 +1129,8 @@ import pandas as pd
 import numpy as np
 import re
 
-def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
+def plot_national_crude_trend(df, output_path='national_crude_incidence_trend.png'):
     # Identify crude incidence columns
-    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
     pattern = re.compile(r'^crude_incidence_(\d{4})$')
     year_cols = [col for col in df.columns if pattern.match(col)]
 
@@ -1149,8 +1148,8 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     subtitle_text = f"Change from {avg_df['Year'].iloc[0]} to {avg_df['Year'].iloc[-1]}: {overall_change:+.1f}%"
 
     # Plot setup
-    plt.figure(figsize=(10, 6))
-    plt.plot(
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(
         avg_df['Year'],
         avg_df['National_Crude_Incidence'],
         marker='o',
@@ -1159,24 +1158,25 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
         label='National Average'
     )
 
-    # Add trend line
+    # Trend line
     if len(avg_df) >= 2:
         fit = np.polyfit(avg_df['Year'], avg_df['National_Crude_Incidence'], 1)
         trend_line = np.poly1d(fit)(avg_df['Year'])
-        plt.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
+        ax.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
 
-    # Annotate crude incidence values above each point
+    # Annotate crude incidence values above each point (with box)
     for i, row in avg_df.iterrows():
         year = row['Year']
         value = row['National_Crude_Incidence']
         if pd.notna(value):
-            plt.text(
+            ax.text(
                 year, value + 2, f"{value:.1f}",
-                fontsize=10, fontweight='bold',
-                ha='center', va='bottom'
+                fontsize=9, fontweight='bold',
+                ha='center', va='bottom',
+                bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
             )
 
-    # Annotate % change between points
+    # Annotate % change between points (with box)
     for i in range(1, len(avg_df)):
         y1 = avg_df.loc[i - 1, 'National_Crude_Incidence']
         y2 = avg_df.loc[i, 'National_Crude_Incidence']
@@ -1189,15 +1189,18 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
             pct_change = ((y2 - y1) / y1) * 100
             label = f"{pct_change:+.0f}%"
 
-            plt.text(
+            ax.text(
                 x_mid, y_mid + 2, label,
-                fontsize=9, fontweight='bold',
-                ha='center', va='bottom'
+                fontsize=8, fontweight='bold',
+                ha='center', va='bottom',
+                bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
             )
 
-    # X-axis ticks
-    plt.xticks(ticks=list(range(2015, 2025)), fontsize=10, fontweight='bold')
-    plt.xlim(2015, 2024)
+    # X-axis
+    ax.set_xticks(list(range(2015, 2025)))
+    ax.set_xlim(2015, 2024)
+    ax.tick_params(axis='x', labelsize=9)
+    ax.tick_params(axis='y', labelsize=9)
 
     # Y-axis: dynamic min, max, and step
     y_values = avg_df['National_Crude_Incidence']
@@ -1212,22 +1215,30 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     else:
         step = 20
 
-    plt.yticks(np.arange(y_min, y_max + step, step), fontsize=10, fontweight='bold')
-    plt.ylim(y_min, y_max + step)
+    ax.set_yticks(np.arange(y_min, y_max + step, step))
+    ax.set_ylim(y_min, y_max + step)
 
     # Labels and grid
-    plt.title("National Crude Incidence Trend (2015–2024)", fontsize=14, fontweight='bold', loc='center')
-    plt.suptitle(subtitle_text, fontsize=11, fontweight='bold', y=0.91)
-    plt.xlabel("Year", fontsize=12, fontweight='bold')
-    plt.ylabel("Crude Incidence", fontsize=12, fontweight='bold')
-    plt.grid(True)
-    plt.legend(fontsize=10)
-    plt.tight_layout()
+    ax.set_title("National Crude Incidence Trend (2015–2024)", fontsize=12, fontweight='bold', pad=20)
+    ax.set_xlabel("Year", fontsize=10, fontweight='bold')
+    ax.set_ylabel("Crude Incidence", fontsize=10, fontweight='bold')
+    ax.grid(True)
+    ax.legend(fontsize=9)
 
-    # Save
+    # Subtitle as a box above the plot
+    fig.text(
+        0.5, 0.92, subtitle_text,
+        fontsize=9, fontweight='bold',
+        ha='center',
+        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
+    )
+
+    # Final layout
+    plt.tight_layout(rect=[0, 0, 1, 0.90])
     plt.savefig(output_path, dpi=400, bbox_inches='tight')
     plt.close()
     print(f"[Saved] {output_path}")
+
 
 
 ## Word documents
