@@ -818,12 +818,13 @@ def epi_trends(output_folder='epi_lineplots'):
     return df
 
 
-## Crude incidence
+## Crude incidence trends
 import os
 import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 def crude_trends(output_folder='crude_plots'):
     os.makedirs(output_folder, exist_ok=True)
@@ -848,7 +849,7 @@ def crude_trends(output_folder='crude_plots'):
         n_cols = 3
         n_rows = int(np.ceil(n / n_cols))
 
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4), sharex=False, sharey=True)
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 6, n_rows * 5), sharex=False, sharey=True)
         axes = axes.flatten()
 
         for i, chiefdom in enumerate(chiefdoms):
@@ -856,7 +857,7 @@ def crude_trends(output_folder='crude_plots'):
             row = df_district[df_district['FIRST_CHIE'] == chiefdom]
 
             if row.empty:
-                ax.set_title(f"{chiefdom} (No data)")
+                ax.set_title(f"{chiefdom} (No data)", fontweight='bold')
                 ax.axis("off")
                 continue
 
@@ -867,18 +868,22 @@ def crude_trends(output_folder='crude_plots'):
                 if len(values) != len(years) or all(pd.isna(values)):
                     continue  # Skip if no valid data
 
-                ax.plot(years, values, marker='o', label=prefix.replace('_', ' ').title(), color=color)
+                ax.plot(years, values, marker='o', label=prefix.replace('_', ' ').title(), color=color, linewidth=2)
 
                 # Add trend line if enough data
                 if np.count_nonzero(~np.isnan(values)) >= 2:
                     fit = np.polyfit(years, values, 1)
                     trend_line = np.poly1d(fit)(years)
-                    ax.plot(years, trend_line, linestyle='--', color=color, alpha=0.7, label="Trend")
+                    ax.plot(years, trend_line, linestyle='--', color=color, alpha=0.7, label="Trend", linewidth=2)
 
-            ax.set_title(chiefdom, fontsize=10)
-            ax.set_xlabel("Year")  # Ensures each subplot shows the x-axis label
+            ax.set_title(chiefdom, fontsize=11, fontweight='bold')
+            ax.set_xlabel("Year", fontsize=10, fontweight='bold')
+            ax.set_ylabel("Incidence", fontsize=10, fontweight='bold')
             ax.grid(True)
             ax.tick_params(axis='x', rotation=45)
+            ax.tick_params(axis='both', labelsize=9)
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
 
         # Turn off unused subplots
         for j in range(i + 1, len(axes)):
@@ -887,17 +892,21 @@ def crude_trends(output_folder='crude_plots'):
         # Add shared legend
         handles, labels = axes[0].get_legend_handles_labels()
         if handles:
-            fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4)
+            fig.legend(handles, labels, title="Indicator", loc="lower center", ncol=4, fontsize=10, title_fontsize=11)
 
-        fig.suptitle(f"Crude Incidence Trends by Chiefdom - {district}", fontsize=14)
+        fig.suptitle(f"Crude Incidence Trends by Chiefdom - {district}", fontsize=16, fontweight='bold')
         plt.tight_layout(rect=[0, 0.05, 1, 0.95])
 
         filename = os.path.join(output_folder, f"{district}_trends.png")
-        plt.savefig(filename, dpi=300)
+        plt.savefig(filename, dpi=400, bbox_inches='tight')
         plt.close()
         print(f"[Saved] {filename}")
 
     return df
+
+
+
+
 
 
 ## Adjusted1 trend
@@ -1117,6 +1126,58 @@ def adjusted3_trends(output_folder='adjusted3_plots'):
         print(f"[Saved] {filename}")
 
     return df
+
+
+### National crude trends
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import re
+
+def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
+    # Step 1: Identify crude incidence year columns
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
+    pattern = re.compile(r'^crude_incidence_(\d{4})$')
+    year_cols = [col for col in df.columns if pattern.match(col)]
+
+    # Step 2: Compute national averages per year (ignoring NaNs)
+    averages = df[year_cols].mean(axis=0)
+    avg_df = averages.reset_index()
+    avg_df.columns = ['Year', 'National_Crude_Incidence']
+    avg_df['Year'] = avg_df['Year'].str.extract(r'(\d{4})').astype(int)
+
+    # Step 3: Plot
+    plt.figure(figsize=(8, 5))
+    plt.plot(
+        avg_df['Year'],
+        avg_df['National_Crude_Incidence'],
+        marker='o',
+        color='darkred',
+        linewidth=2,
+        label='National Average'
+    )
+
+    # Trend line
+    if len(avg_df) >= 2:
+        fit = np.polyfit(avg_df['Year'], avg_df['National_Crude_Incidence'], 1)
+        trend_line = np.poly1d(fit)(avg_df['Year'])
+        plt.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
+
+    # Format
+    plt.title("National Crude Incidence Trend", fontsize=14, fontweight='bold')
+    plt.xlabel("Year", fontsize=12, fontweight='bold')
+    plt.ylabel("Crude Incidence", fontsize=12, fontweight='bold')
+    plt.xticks(fontsize=10, fontweight='bold')
+    plt.yticks(fontsize=10, fontweight='bold')
+    plt.grid(True)
+    plt.legend(fontsize=10)
+    plt.tight_layout()
+
+    # Save
+    plt.savefig(output_path, dpi=400, bbox_inches='tight')
+    plt.close()
+    print(f"[Saved] {output_path}")
+
 
 
 ## Word documents
