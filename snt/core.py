@@ -886,7 +886,7 @@ def crude_trends(output_folder='crude_plots'):
             ax.spines['right'].set_visible(False)
 
         for label in ax.get_xticklabels() + ax.get_yticklabels():
-        label.set_fontweight('bold')
+            label.set_fontweight('bold')
 
         # Turn off unused subplots
         for j in range(i + 1, len(axes)):
