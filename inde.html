@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLE SNT Package Workflow</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    
+    .flowchart-container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      position: relative;
+      width: 800px;
+      height: 700px;
+    }
+    
+    .title {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin: 10px 0 30px;
+    }
+    
+    .node {
+      position: absolute;
+      border: 2px solid;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      background-color: white;
+      width: 160px;
+      height: 60px;
+      z-index: 2;
+    }
+    
+    .node:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .node-title {
+      font-weight: bold;
+      font-size: 14px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .node-icon {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .tooltip {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      width: 180px;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 5px;
+      z-index: 10;
+      display: none;
+    }
+    
+    .node:hover .tooltip {
+      display: block;
+    }
+    
+    .line {
+      position: absolute;
+      height: 2px;
+      background-color: #aaa;
+      z-index: 1;
+    }
+    
+    .vertical-line {
+      position: absolute;
+      width: 2px;
+      background-color: #aaa;
+      z-index: 1;
+    }
+    
+    .arrow {
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      z-index: 1;
+    }
+    
+    .right-arrow {
+      border-width: 6px 0 6px 8px;
+      border-color: transparent transparent transparent #aaa;
+    }
+    
+    .down-arrow {
+      border-width: 8px 6px 0 6px;
+      border-color: #aaa transparent transparent transparent;
+    }
+    
+    .logo {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 64px;
+      height: 64px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f8f8f8;
+      font-size: 24px;
+      font-weight: bold;
+      color: #555;
+    }
+    
+    .legend {
+      position: absolute;
+      top: 100px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border: 1px solid;
+      border-radius: 2px;
+    }
+    
+    .download-btn {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 16px;
+      background-color: #4a6bdf;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    
+    .download-btn:hover {
+      background-color: #3a5ac5;
+    }
+    
+    .note {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      font-size: 12px;
+      color: #777;
+    }
+
+    /* Node colors */
+    .install-node {
+      border-color: #b794f4;
+      background-color: #f3ebff;
+    }
+    
+    .command-node {
+      border-color: #a0aec0;
+      background-color: #f7f7f8;
+    }
+    
+    .file-node {
+      border-color: #f6ad55;
+      background-color: #fffaf0;
+    }
+    
+    .function-node {
+      border-color: #63b3ed;
+      background-color: #ebf8ff;
+    }
+    
+    .data-node {
+      border-color: #68d391;
+      background-color: #f0fff4;
+    }
+
+    /* Legend colors */
+    .install-color {
+      background-color: #f3ebff;
+      border-color: #b794f4;
+    }
+    
+    .command-color {
+      background-color: #f7f7f8;
+      border-color: #a0aec0;
+    }
+    
+    .file-color {
+      background-color: #fffaf0;
+      border-color: #f6ad55;
+    }
+    
+    .function-color {
+      background-color: #ebf8ff;
+      border-color: #63b3ed;
+    }
+    
+    .data-color {
+      background-color: #f0fff4;
+      border-color: #68d391;
+    }
+  </style>
+</head>
+<body onload="addDownloadHandler()">
+  <div class="flowchart-container" id="flowchart">
+    <div class="logo">SNT</div>
+    <h1 class="title">SNT Package XLSX Workflow</h1>
+    
+    <!-- Installation Nodes -->
+    <div class="node install-node" style="left: 350px; top: 90px; width: 200px;">
+      <div class="node-title">📦 Installation</div>
+      <div class="tooltip">First step to set up the SNT package</div>
+    </div>
+    
+    <div class="node command-node" style="left: 180px; top: 160px; width: 180px;">
+      <div class="node-title">git clone</div>
+      <div class="tooltip">git clone https://github.com/mohamedsillahkanu/snt.git</div>
+    </div>
+    
+    <div class="node command-node" style="left: 520px; top: 160px; width: 180px;">
+      <div class="node-title">cd snt-package</div>
+      <div class="tooltip">Change directory to the package folder</div>
+    </div>
+    
+    <!-- Input File Nodes -->
+    <div class="node file-node" style="left: 100px; top: 250px;">
+      <div class="node-title">XLSX Files</div>
+      <div class="tooltip">Multiple .xlsx files in a folder</div>
+    </div>
+    
+    <div class="node file-node" style="left: 100px; top: 350px;">
+      <div class="node-title">Mapping File</div>
+      <div class="tooltip">Excel file with column name mappings</div>
+    </div>
+    
+    <div class="node file-node" style="left: 100px; top: 450px;">
+      <div class="node-title">Formula File</div>
+      <div class="tooltip">Excel file with formula specifications</div>
+    </div>
+    
+    <div class="node file-node" style="left: 100px; top: 550px;">
+      <div class="node-title">Column File</div>
+      <div class="tooltip">Excel file with split column specifications</div>
+    </div>
+    
+    <!-- Function Nodes -->
+    <div class="node function-node" style="left: 350px; top: 250px;">
+      <div class="node-title">combine_xlsx()</div>
+      <div class="tooltip">Merges multiple .xlsx files into one DataFrame</div>
+    </div>
+    
+    <div class="node function-node" style="left: 350px; top: 350px;">
+      <div class="node-title">rename()</div>
+      <div class="tooltip">Rename columns using a mapping Excel file</div>
+    </div>
+    
+    <div class="node function-node" style="left: 350px; top: 450px;">
+      <div class="node-title">compute()</div>
+      <div class="tooltip">Apply row-based computations to generate new variables</div>
+    </div>
+    
+    <div class="node function-node" style="left: 350px; top: 550px;">
+      <div class="node-title">split()</div>
+      <div class="tooltip">Convert wide to long format using specified columns</div>
+    </div>
+    
+    <!-- DataFrame Nodes -->
+    <div class="node data-node" style="left: 580px; top: 250px; width: 170px;">
+      <div class="node-title">Combined DataFrame</div>
+      <div class="tooltip">DataFrame from combined .xlsx files</div>
+    </div>
+    
+    <div class="node data-node" style="left: 580px; top: 350px; width: 170px;">
+      <div class="node-title">Renamed DataFrame</div>
+      <div class="tooltip">DataFrame with renamed columns</div>
+    </div>
+    
+    <div class="node data-node" style="left: 580px; top: 450px; width: 170px;">
+      <div class="node-title">Computed DataFrame</div>
+      <div class="tooltip">DataFrame with new computed variables</div>
+    </div>
+    
+    <div class="node data-node" style="left: 580px; top: 550px; width: 170px;">
+      <div class="node-title">Split DataFrame</div>
+      <div class="tooltip">DataFrame converted to long format</div>
+    </div>
+    
+    <!-- Final Node -->
+    <div class="node data-node" style="left: 350px; top: 650px; width: 220px; height: 70px;">
+      <div class="node-title">Final DataFrame</div>
+      <div class="tooltip">Complete processed DataFrame ready for analysis</div>
+    </div>
+    
+    <!-- Installation Arrows -->
+    <div class="line" style="left: 290px; top: 165px; width: 230px;"></div>
+    <div class="arrow right-arrow" style="left: 518px; top: 159px;"></div>
+    
+    <div class="vertical-line" style="left: 350px; top: 130px; height: 30px;"></div>
+    <div class="arrow down-arrow" style="left: 344px; top: 159px;"></div>
+    
+    <div class="vertical-line" style="left: 350px; top: 190px; height: 60px;"></div>
+    <div class="arrow down-arrow" style="left: 344px; top: 249px;"></div>
+    
+    <!-- Horizontal Arrows Files to Functions -->
+    <div class="line" style="left: 180px; top: 275px; width: 170px;"></div>
+    <div class="arrow right-arrow" style="left: 348px; top: 269px;"></div>
+    
+    <div class="line" style="left: 180px; top: 375px; width: 170px;"></div>
+    <div class="arrow right-arrow" style="left: 348px; top: 369px;"></div>
+    
+    <div class="line" style="left: 180px; top: 475px; width: 170px;"></div>
+    <div class="arrow right-arrow" style="left: 348px; top: 469px;"></div>
+    
+    <div class="line" style="left: 180px; top: 575px; width: 170px;"></div>
+    <div class="arrow right-arrow" style="left: 348px; top: 569px;"></div>
+    
+    <!-- Horizontal Arrows Functions to DataFrames -->
+    <div class="line" style="left: 510px; top: 275px; width: 70px;"></div>
+    <div class="arrow right-arrow" style="left: 578px; top: 269px;"></div>
+    
+    <div class="line" style="left: 510px; top: 375px; width: 70px;"></div>
+    <div class="arrow right-arrow" style="left: 578px; top: 369px;"></div>
+    
+    <div class="line" style="left: 510px; top: 475px; width: 70px;"></div>
+    <div class="arrow right-arrow" style="left: 578px; top: 469px;"></div>
+    
+    <div class="line" style="left: 510px; top: 575px; width: 70px;"></div>
+    <div class="arrow right-arrow" style="left: 578px; top: 569px;"></div>
+    
+    <!-- Vertical Flow Arrows -->
+    <div class="vertical-line" style="left: 430px; top: 310px; height: 40px;"></div>
+    <div class="arrow down-arrow" style="left: 424px; top: 349px;"></div>
+    
+    <div class="vertical-line" style="left: 430px; top: 410px; height: 40px;"></div>
+    <div class="arrow down-arrow" style="left: 424px; top: 449px;"></div>
+    
+    <div class="vertical-line" style="left: 430px; top: 510px; height: 40px;"></div>
+    <div class="arrow down-arrow" style="left: 424px; top: 549px;"></div>
+    
+    <div class="vertical-line" style="left: 430px; top: 610px; height: 40px;"></div>
+    <div class="arrow down-arrow" style="left: 424px; top: 649px;"></div>
+    
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color install-color"></div>
+        <span>Installation</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color command-color"></div>
+        <span>Commands</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color file-color"></div>
+        <span>Input Files</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color function-color"></div>
+        <span>Functions</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color data-color"></div>
+        <span>DataFrames</span>
+      </div>
+    </div>
+    
+    <div class="note">
+      ℹ️ Hover over elements for more information
+    </div>
+    
+    <button class="download-btn" id="download-btn">
+      📥 Download as Image
+    </button>
+  </div>
+
+  <script>
+    function addDownloadHandler() {
+      document.getElementById('download-btn').addEventListener('click', function() {
+        // Hide the download button for the screenshot
+        this.style.display = 'none';
+        
+        // Use html2canvas library to capture the flowchart
+        html2canvas(document.getElementById('flowchart')).then(function(canvas) {
+          // Create an image from the canvas
+          var image = canvas.toDataURL('image/png');
+          
+          // Create a download link
+          var downloadLink = document.createElement('a');
+          downloadLink.href = image;
+          downloadLink.download = 'snt-workflow-diagram.png';
+          
+          // Trigger the download
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          
+          // Show the download button again
+          document.getElementById('download-btn').style.display = 'flex';
+        });
+      });
+    }
+  </script>
+
+  <!-- Include html2canvas for screenshot functionality -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>
