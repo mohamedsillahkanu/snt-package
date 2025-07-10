@@ -177,6 +177,107 @@ def clean_dataframe(df, filename):
     
     return df
 
+import pandas as pd
+from pathlib import Path
+import warnings
+from collections import defaultdict
+import re
+import unicodedata
+
+def clean_column_name(col_name):
+    """
+    Clean column names by removing accents, special characters, and trailing spaces.
+    
+    Parameters:
+    col_name (str): Original column name
+    
+    Returns:
+    str: Cleaned column name
+    """
+    if pd.isna(col_name) or col_name == '':
+        return col_name
+    
+    # Convert to string if not already
+    col_name = str(col_name)
+    
+    # Remove trailing and leading spaces
+    col_name = col_name.strip()
+    
+    # Remove accents (normalize to NFD, then remove combining characters)
+    col_name = unicodedata.normalize('NFD', col_name)
+    col_name = ''.join(char for char in col_name if unicodedata.category(char) != 'Mn')
+    
+    # Replace special characters with underscores (keep alphanumeric, spaces, and underscores)
+    col_name = re.sub(r'[^\w\s]', '_', col_name)
+    
+    # Replace multiple spaces with single space
+    col_name = re.sub(r'\s+', ' ', col_name)
+    
+    # Remove trailing and leading spaces again
+    col_name = col_name.strip()
+    
+    return col_name
+
+def clean_dataframe(df, filename):
+    """
+    Clean dataframe by removing unnamed columns and cleaning column names.
+    
+    Parameters:
+    df (pd.DataFrame): Original dataframe
+    filename (str): Name of the file for reporting
+    
+    Returns:
+    pd.DataFrame: Cleaned dataframe
+    """
+    original_cols = len(df.columns)
+    
+    # Remove unnamed columns (columns that start with 'Unnamed:' or are empty/NaN)
+    columns_to_keep = []
+    unnamed_cols = []
+    
+    for col in df.columns:
+        col_str = str(col)
+        if (col_str.startswith('Unnamed:') or 
+            pd.isna(col) or 
+            col_str.strip() == '' or 
+            col_str.strip() == 'nan'):
+            unnamed_cols.append(col)
+        else:
+            columns_to_keep.append(col)
+    
+    # Keep only named columns
+    if unnamed_cols:
+        print(f"  Removed {len(unnamed_cols)} unnamed columns from {filename}")
+        df = df[columns_to_keep]
+    
+    # Clean column names
+    original_column_names = df.columns.tolist()
+    cleaned_column_names = [clean_column_name(col) for col in df.columns]
+    
+    # Check if any column names were changed
+    changed_cols = []
+    for orig, clean in zip(original_column_names, cleaned_column_names):
+        if str(orig) != clean:
+            changed_cols.append((orig, clean))
+    
+    if changed_cols:
+        print(f"  Cleaned {len(changed_cols)} column names in {filename}")
+        for orig, clean in changed_cols[:3]:  # Show first 3 examples
+            print(f"    '{orig}' -> '{clean}'")
+        if len(changed_cols) > 3:
+            print(f"    ... and {len(changed_cols) - 3} more")
+    
+    # Apply cleaned column names
+    df.columns = cleaned_column_names
+    
+    # Remove duplicate column names by adding suffix
+    if df.columns.duplicated().any():
+        df.columns = pd.Index([f"{col}_{i}" if df.columns.tolist()[:i].count(col) > 0 else col 
+                              for i, col in enumerate(df.columns)])
+        print(f"  Resolved duplicate column names in {filename}")
+    
+    return df
+
 def combine_files(file_path):
     """
     Combine files of the same type in a directory.
@@ -310,24 +411,6 @@ def combine_files(file_path):
     print(f"Combined dataset shape: {combined_df.shape}")
     print(f"Total columns in combined dataset: {len(combined_df.columns)}")
     
-    # Print preview of combined data
-    print("\n=== Preview of Combined Data ===")
-    print(combined_df.tail())
-    
-    # Display column names in groups of 3
-    print("\n=== All Column Names ===")
-    columns = list(combined_df.columns)
-    
-    # Group columns into sets of 3 and display
-    for i in range(0, len(columns), 3):
-        group = columns[i:i+3]
-        # Pad with empty strings if needed
-        while len(group) < 3:
-            group.append("")
-        print(f"{group[0]:<30} {group[1]:<30} {group[2]:<30}")
-    
-    print(f"\nTotal columns: {len(columns)}")
-    
     # Summary statistics
     print(f"\n=== Summary ===")
     print(f"Files combined: {len(df_list)}")
@@ -348,8 +431,24 @@ def combine_files(file_path):
         for col, missing_count, missing_pct in missing_summary:
             print(f"{col:<30} Missing: {missing_count:<8} ({missing_pct})")
     
+    # Save the combined data to Excel
+    output_filename = file_path / "combined_data.xlsx"
+    try:
+        combined_df.to_excel(output_filename, index=False)
+        print(f"\n=== File Saved ===")
+        print(f"Combined data saved to: {output_filename}")
+        print(f"File is ready for download!")
+    except Exception as e:
+        print(f"\nError saving file: {str(e)}")
+        print("Trying alternative filename...")
+        try:
+            alt_filename = file_path / f"combined_data_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            combined_df.to_excel(alt_filename, index=False)
+            print(f"Combined data saved to: {alt_filename}")
+        except Exception as e2:
+            print(f"Failed to save file: {str(e2)}")
+    
     return combined_df
-
 
 def rename(df):
     name_map = pd.read_excel("input_files/others/old_new_rename.xlsx")
