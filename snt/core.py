@@ -69,6 +69,167 @@ def combine_csv(file_path):
     return combined_df
 
 
+
+import pandas as pd
+from pathlib import Path
+from tabulate import tabulate
+import warnings
+from collections import defaultdict
+
+def combine_files(file_path):
+    """
+    Combine files of the same type in a directory.
+    Handles Excel (.xlsx, .xls), CSV (.csv), Stata (.dta), and SPSS (.sav) files.
+    Manages both common and uncommon columns across files.
+    
+    Parameters:
+    file_path (str): Path to directory containing files to combine
+    
+    Returns:
+    pd.DataFrame: Combined dataframe with all files
+    """
+    
+    file_path = Path(file_path)
+    
+    # Define file readers for different formats
+    readers = {
+        '.xlsx': pd.read_excel,
+        '.xls': pd.read_excel,
+        '.csv': pd.read_csv,
+        '.dta': pd.read_stata,
+        '.sav': pd.read_spss
+    }
+    
+    # Find all files and determine the file type
+    all_files = list(file_path.glob("*"))
+    data_files = []
+    file_extension = None
+    
+    # Get the first data file extension to determine file type
+    for file in all_files:
+        if file.suffix.lower() in readers:
+            if file_extension is None:
+                file_extension = file.suffix.lower()
+            elif file.suffix.lower() != file_extension:
+                print(f"Warning: Mixed file types found. Using {file_extension} files only.")
+                continue
+            data_files.append(file)
+    
+    if not data_files:
+        raise ValueError("No supported data files found in the directory")
+    
+    if file_extension not in readers:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+    
+    print(f"Found {len(data_files)} {file_extension} files to combine")
+    
+    # Read all files and track columns
+    df_list = []
+    file_columns = {}  # Track columns for each file
+    all_columns = set()
+    
+    reader_func = readers[file_extension]
+    
+    for file in data_files:
+        try:
+            print(f"Reading: {file.name}")
+            
+            # Special handling for different file types
+            if file_extension == '.csv':
+                df = reader_func(file, encoding='utf-8')
+            elif file_extension == '.sav':
+                df = reader_func(file, apply_value_formats=True)
+            else:
+                df = reader_func(file)
+            
+            df_list.append(df)
+            file_columns[file.name] = set(df.columns)
+            all_columns.update(df.columns)
+            
+        except Exception as e:
+            print(f"Error reading {file.name}: {str(e)}")
+            continue
+    
+    if not df_list:
+        raise ValueError("No files could be read successfully")
+    
+    # Analyze column differences
+    print("\n=== Column Analysis ===")
+    
+    # Find common columns (present in all files)
+    common_columns = set(file_columns[list(file_columns.keys())[0]])
+    for file_cols in file_columns.values():
+        common_columns &= file_cols
+    
+    print(f"Common columns across all files: {len(common_columns)}")
+    if common_columns:
+        print("Common columns:", sorted(list(common_columns)))
+    
+    # Find uncommon columns and report which files are missing them
+    uncommon_columns = all_columns - common_columns
+    if uncommon_columns:
+        print(f"\nUncommon columns found: {len(uncommon_columns)}")
+        
+        # Create a detailed report of missing columns
+        column_file_map = defaultdict(list)
+        for col in uncommon_columns:
+            files_with_col = []
+            files_without_col = []
+            
+            for filename, cols in file_columns.items():
+                if col in cols:
+                    files_with_col.append(filename)
+                else:
+                    files_without_col.append(filename)
+            
+            print(f"\nColumn '{col}':")
+            print(f"  Present in: {', '.join(files_with_col)}")
+            if files_without_col:
+                print(f"  Missing from: {', '.join(files_without_col)}")
+    
+    # Combine all dataframes (pandas will handle missing columns by filling with NaN)
+    print(f"\n=== Combining Files ===")
+    combined_df = pd.concat(df_list, ignore_index=True, sort=False)
+    
+    print(f"Combined dataset shape: {combined_df.shape}")
+    print(f"Total columns in combined dataset: {len(combined_df.columns)}")
+    
+    # Print preview of combined data
+    print("\n=== Preview of Combined Data ===")
+    print(tabulate(combined_df.tail(), headers='keys', tablefmt='grid'))
+    
+    # Format column names into 3 columns for better readability
+    print("\n=== All Column Names (3 per row) ===")
+    columns = list(combined_df.columns)
+    padded_cols = columns + [""] * ((3 - len(columns) % 3) % 3)  # pad to multiple of 3
+    col_table = [padded_cols[i:i+3] for i in range(0, len(padded_cols), 3)]
+    print(tabulate(col_table, headers=["Column 1", "Column 2", "Column 3"], tablefmt="grid"))
+    
+    # Summary statistics
+    print(f"\n=== Summary ===")
+    print(f"Files combined: {len(df_list)}")
+    print(f"Total rows: {len(combined_df)}")
+    print(f"Total columns: {len(combined_df.columns)}")
+    print(f"Common columns: {len(common_columns)}")
+    print(f"Uncommon columns: {len(uncommon_columns)}")
+    
+    # Check for missing values in uncommon columns
+    if uncommon_columns:
+        missing_summary = []
+        for col in uncommon_columns:
+            missing_count = combined_df[col].isna().sum()
+            missing_pct = (missing_count / len(combined_df)) * 100
+            missing_summary.append([col, missing_count, f"{missing_pct:.1f}%"])
+        
+        print("\n=== Missing Values in Uncommon Columns ===")
+        print(tabulate(missing_summary, 
+                      headers=["Column", "Missing Count", "Missing %"], 
+                      tablefmt="grid"))
+    
+    return combined_df
+
+
+
 def rename(df):
     name_map = pd.read_excel("input_files/others/old_new_rename.xlsx")
     rename_dict = dict(zip(name_map.iloc[:, 0], name_map.iloc[:, 1]))
