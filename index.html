@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R Data Processing Flowchart</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        #flowchart {
+            width: 100%;
+            height: auto;
+            background-color: white;
+        }
+        
+        .download-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background-color: #ff6b35;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .download-btn:hover {
+            background-color: #e55a2b;
+        }
+        
+        .instructions {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #ff6b35;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #ff6b35;
+        }
+        
+        .instructions p {
+            margin: 5px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>R Data Processing Script Flowchart</h1>
+        
+        <div id="flowchart">
+            <div class="mermaid">
+                flowchart TD
+                    A[Load Required Libraries] --> B[Set Folder Path]
+                    B --> C[List All Files in Folder]
+                    C --> D{Any Files Found?}
+                    D -->|No| E[Stop: No Files Found]
+                    D -->|Yes| F[Detect File Type from First File]
+                    F --> G[Display Detected File Type]
+                    G --> H[Define Reader Function Based on Extension]
+                    H --> I{Supported File Type?}
+                    I -->|No| J[Stop: Unsupported File Type]
+                    I -->|Yes| K[Read and Clean Each File Loop]
+                    K --> L[Read File with Appropriate Function]
+                    L --> M[Clean Column Names with janitor]
+                    M --> N[Remove Leading Blank Rows]
+                    N --> O{More Files to Process?}
+                    O -->|Yes| K
+                    O -->|No| P[Extract Column Names from All Files]
+                    P --> Q[Check if All Files Have Same Columns]
+                    Q --> R{All Columns Identical?}
+                    R -->|Yes| S[Message: Identical Columns]
+                    S --> T[Combine All Files Directly]
+                    T --> U[Set Both Outputs to Same Combined Data]
+                    R -->|No| V[Message: Column Names Differ]
+                    V --> W[Find Common Columns Intersection]
+                    W --> X[Create Common Columns Dataset]
+                    X --> Y[Create Union Columns Dataset with NAs]
+                    U --> Z[Save Common Version as CSV]
+                    Y --> Z
+                    Z --> AA[Save Common Version as XLSX]
+                    AA --> BB[Save Common Version as XLS]
+                    BB --> CC[Save Union Version as CSV]
+                    CC --> DD[Save Union Version as XLSX]
+                    DD --> EE[Save Union Version as XLS]
+                    EE --> FF[Success Message: Files Combined and Saved]
+                    FF --> GG[End]
+                    E --> GG
+                    J --> GG
+
+                    style A fill:#ff6b35,color:#fff,stroke:#000,stroke-width:3px
+                    style B fill:#f7931e,color:#fff,stroke:#000,stroke-width:3px
+                    style C fill:#ffd23f,color:#000,stroke:#000,stroke-width:3px
+                    style D fill:#ff006e,color:#fff,stroke:#000,stroke-width:3px
+                    style E fill:#dc2626,color:#fff,stroke:#000,stroke-width:3px
+                    style F fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
+                    style G fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style H fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
+                    style I fill:#ff006e,color:#fff,stroke:#000,stroke-width:3px
+                    style J fill:#dc2626,color:#fff,stroke:#000,stroke-width:3px
+                    style K fill:#3a86ff,color:#fff,stroke:#000,stroke-width:3px
+                    style L fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style M fill:#f7931e,color:#fff,stroke:#000,stroke-width:3px
+                    style N fill:#ffd23f,color:#000,stroke:#000,stroke-width:3px
+                    style O fill:#ff006e,color:#fff,stroke:#000,stroke-width:3px
+                    style P fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
+                    style Q fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
+                    style R fill:#ff006e,color:#fff,stroke:#000,stroke-width:3px
+                    style S fill:#10b981,color:#fff,stroke:#000,stroke-width:3px
+                    style T fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style U fill:#3a86ff,color:#fff,stroke:#000,stroke-width:3px
+                    style V fill:#f59e0b,color:#fff,stroke:#000,stroke-width:3px
+                    style W fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
+                    style X fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
+                    style Y fill:#ff6b35,color:#fff,stroke:#000,stroke-width:3px
+                    style Z fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style AA fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style BB fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style CC fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style DD fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style EE fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style FF fill:#10b981,color:#fff,stroke:#000,stroke-width:3px
+                    style GG fill:#ff6b35,color:#fff,stroke:#000,stroke-width:3px
+            </div>
+        </div>
+        
+        <div style="text-align: center;">
+            <p style="color: #666; font-style: italic;">Right-click on the flowchart below to save as image</p>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Download:</h3>
+            <p><strong>Option 1:</strong> Right-click on the flowchart → "Save image as..." → Choose PNG/SVG format</p>
+            <p><strong>Option 2:</strong> Take a screenshot of the flowchart area</p>
+            <p><strong>Option 3:</strong> Use browser's print function → "Save as PDF"</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            themeVariables: {
+                background: '#ffffff',
+                primaryColor: '#ffffff',
+                primaryTextColor: '#000000',
+                primaryBorderColor: '#000000',
+                lineColor: '#000000'
+            }
+        });
+
+        // Download function
+        function downloadChart() {
+            const svg = document.querySelector('#flowchart svg');
+            if (!svg) {
+                alert('Please wait for the chart to load completely, then try again.');
+                return;
+            }
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Get SVG dimensions
+            const svgRect = svg.getBoundingClientRect();
+            canvas.width = svgRect.width * 2; // Higher resolution
+            canvas.height = svgRect.height * 2;
+            
+            // Scale context for higher resolution
+            ctx.scale(2, 2);
+            
+            // Fill white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Convert SVG to image
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, svgRect.width, svgRect.height);
+                
+                // Download
+                const link = document.createElement('a');
+                link.download = 'R_Data_Processing_Flowchart.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                URL.revokeObjectURL(svgUrl);
+            };
+            img.src = svgUrl;
+        }
+
+        // Alternative: Right-click save functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const svgElement = document.querySelector('#flowchart svg');
+                if (svgElement) {
+                    svgElement.style.backgroundColor = 'white';
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
