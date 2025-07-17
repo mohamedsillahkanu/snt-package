@@ -18,18 +18,18 @@
         
         .container {
             background-color: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 1200px;
+            max-width: 900px;
             width: 100%;
         }
         
         h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 30px;
-            font-size: 28px;
+            margin-bottom: 20px;
+            font-size: 22px;
         }
         
         #flowchart {
@@ -100,19 +100,33 @@
                     Q --> R{All Columns Identical?}
                     R -->|Yes| S[Message: Identical Columns]
                     S --> T[Combine All Files Directly]
-                    T --> U[Set Both Outputs to Same Combined Data]
+                    T --> U[Create common_columns_all Dataset]
                     R -->|No| V[Message: Column Names Differ]
-                    V --> W[Find Common Columns Intersection]
-                    W --> X[Create Common Columns Dataset]
-                    X --> Y[Create Union Columns Dataset with NAs]
-                    U --> Z[Save Common Version as CSV]
-                    Y --> Z
-                    Z --> AA[Save Common Version as XLSX]
-                    AA --> BB[Save Common Version as XLS]
-                    BB --> CC[Save Union Version as CSV]
-                    CC --> DD[Save Union Version as XLSX]
-                    DD --> EE[Save Union Version as XLS]
-                    EE --> FF[Success Message: Files Combined and Saved]
+                    
+                    V --> W1[Common Columns Branch]
+                    V --> W2[All Columns Branch]
+                    
+                    W1 --> X1[Find Common Columns Intersection]
+                    X1 --> Y1[Create common_columns_portion Dataset]
+                    
+                    W2 --> X2[Keep All Columns from All Files]
+                    X2 --> Y2[Create all_columns Dataset with NAs]
+                    
+                    U --> Z1[Save common_columns_all.csv]
+                    Y1 --> Z2[Save common_columns_portion.csv]
+                    Y2 --> Z3[Save all_columns.csv]
+                    
+                    Z1 --> AA1[Save common_columns_all.xlsx]
+                    Z2 --> AA2[Save common_columns_portion.xlsx]
+                    Z3 --> AA3[Save all_columns.xlsx]
+                    
+                    AA1 --> BB1[Save common_columns_all.xls]
+                    AA2 --> BB2[Save common_columns_portion.xls]
+                    AA3 --> BB3[Save all_columns.xls]
+                    
+                    BB1 --> FF
+                    BB2 --> FF
+                    BB3 --> FF[Success Message: Files Combined and Saved]
                     FF --> GG[End]
                     E --> GG
                     J --> GG
@@ -142,12 +156,15 @@
                     style W fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
                     style X fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
                     style Y fill:#ff6b35,color:#fff,stroke:#000,stroke-width:3px
-                    style Z fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style AA fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style BB fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style CC fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style DD fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style EE fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style Z1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style Z2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style Z3 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style AA1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style AA2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style AA3 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style BB1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style BB2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
+                    style BB3 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style FF fill:#10b981,color:#fff,stroke:#000,stroke-width:3px
                     style GG fill:#ff6b35,color:#fff,stroke:#000,stroke-width:3px
             </div>
@@ -156,13 +173,7 @@
         <div style="text-align: center;">
             <p style="color: #666; font-style: italic;">Right-click on the flowchart below to save as image</p>
         </div>
-        
-        <div class="instructions">
-            <h3>How to Download:</h3>
-            <p><strong>Option 1:</strong> Right-click on the flowchart → "Save image as..." → Choose PNG/SVG format</p>
-            <p><strong>Option 2:</strong> Take a screenshot of the flowchart area</p>
-            <p><strong>Option 3:</strong> Use browser's print function → "Save as PDF"</p>
-        </div>
+  
     </div>
 
     <script>
@@ -171,9 +182,11 @@
             startOnLoad: true,
             theme: 'default',
             flowchart: {
-                useMaxWidth: false,
+                useMaxWidth: true,
                 htmlLabels: true,
-                curve: 'basis'
+                curve: 'basis',
+                nodeSpacing: 40,
+                rankSpacing: 30
             },
             themeVariables: {
                 background: '#ffffff',
@@ -184,56 +197,14 @@
             }
         });
 
-        // Download function
-        function downloadChart() {
-            const svg = document.querySelector('#flowchart svg');
-            if (!svg) {
-                alert('Please wait for the chart to load completely, then try again.');
-                return;
-            }
-
-            // Create canvas
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Get SVG dimensions
-            const svgRect = svg.getBoundingClientRect();
-            canvas.width = svgRect.width * 2; // Higher resolution
-            canvas.height = svgRect.height * 2;
-            
-            // Scale context for higher resolution
-            ctx.scale(2, 2);
-            
-            // Fill white background
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Convert SVG to image
-            const svgData = new XMLSerializer().serializeToString(svg);
-            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
-            const svgUrl = URL.createObjectURL(svgBlob);
-            
-            const img = new Image();
-            img.onload = function() {
-                ctx.drawImage(img, 0, 0, svgRect.width, svgRect.height);
-                
-                // Download
-                const link = document.createElement('a');
-                link.download = 'R_Data_Processing_Flowchart.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                URL.revokeObjectURL(svgUrl);
-            };
-            img.src = svgUrl;
-        }
-
         // Alternative: Right-click save functionality
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 const svgElement = document.querySelector('#flowchart svg');
                 if (svgElement) {
                     svgElement.style.backgroundColor = 'white';
+                    // Make SVG downloadable by right-click
+                    svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
                 }
             }, 1000);
         });
