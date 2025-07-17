@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Routine Malaria Data Concatenation Flowchart</title>
+    <title>R Data Processing Flowchart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
     <style>
         body {
@@ -77,58 +77,46 @@
 </head>
 <body>
     <div class="container">
-        <h1>Routine Data Files Concatenation Flowchart</h1>
+        <h1>R Data Processing Script Flowchart</h1>
         
         <div id="flowchart">
             <div class="mermaid">
                 flowchart TD
-                    A[Load Required Libraries] --> B[Set Folder Path]
-                    B --> C[List All Files in Folder]
+                    A[Load Required Libraries<br/>readxl, readr, openxlsx, dplyr, janitor, tools] --> B[Set Folder Path<br/>user-defined path]
+                    B --> C[Searching for xlsx, xls and csv files<br/>scanning folder contents]
                     C --> D{Any Files Found?}
-                    D -->|No| E[Stop: No Files Found]
-                    D -->|Yes| F[Detect File Type from First File]
-                    F --> G[Display Detected File Type: xlsx, xls, csv]
-                    G --> H[Define Reader Function Based on Extension: read_excel, read_csv]
-                    H --> I{Supported File Type?}
-                    I -->|No| J[Stop: Unsupported File Type]
-                    I -->|Yes| K[Read and Clean Each File Loop]
-                    K --> L[Read File with Appropriate Function]
-                    L --> M[Clean Column Names with janitor]
-                    M --> N[Remove Leading Blank Rows]
-                    N --> O{More Files to Process?}
-                    O -->|Yes| K
-                    O -->|No| P[Extract Column Names from All Files]
-                    P --> Q[Check if All Files Have Same Columns]
-                    Q --> R{All Columns Identical?}
-                    R -->|Yes| S[Message: Identical Columns]
-                    S --> T[Combine All Files Directly]
-                    T --> U[Create common_columns_all Dataset]
-                    R -->|No| V[Message: Column Names Differ]
+                    D -->|No| E[Stop: No Files Found<br/>error message]
+                    D -->|Yes| F[List All Files in Folder<br/>with .csv, .xlsx, .xls extensions]
+                    F --> G[Detect File Type from First File<br/>using file_ext function]
+                    G --> M[Clean Column Names with janitor<br/>clean_names function]
+                    M --> N[Remove Leading Blank Rows<br/>while loop for NA rows]
+                    N --> O{More Files to Process?<br/>continue lapply loop}
+                    O -->|Yes| G
+                    O -->|No| P[Extract Column Names from All Files<br/>lapply with names function]
+                    P --> Q[Check if All Files Have Same Columns<br/>setequal comparison]
+                    Q --> R{All Columns Identical?<br/>boolean check}
+                    R -->|Yes| S[Message: Identical Columns<br/>console output]
+                    S --> T[Combine All Files Directly<br/>bind_rows function]
+                    T --> U[Create common_columns_all Dataset<br/>single combined dataframe]
+                    R -->|No| V[Message: Column Names Differ<br/>console warning]
                     
-                    V --> CommonBranch[Find Common Columns Intersection]
-                    V --> AllBranch[Keep All Columns from All Files]
+                    V --> AllBranch[Keep All Columns from All Files<br/>bind_rows with NA fill]
                     
-                    CommonBranch --> CommonData[Create common_columns_portion Dataset]
-                    AllBranch --> AllData[Create all_columns Dataset with NAs]
+                    AllBranch --> AllData[Create all_columns Dataset with NAs<br/>union of all columns]
                     
-                    U --> Z1[Save common_columns_all.csv]
-                    CommonData --> Z2[Save common_columns_portion.csv]
-                    AllData --> Z3[Save all_columns.csv]
+                    U --> Z1[Save common_columns_all.csv<br/>write_csv function]
+                    AllData --> Z3[Save all_columns.csv<br/>write_csv function]
                     
-                    Z1 --> AA1[Save common_columns_all.xlsx]
-                    Z2 --> AA2[Save common_columns_portion.xlsx]
-                    Z3 --> AA3[Save all_columns.xlsx]
+                    Z1 --> AA1[Save common_columns_all.xlsx<br/>write.xlsx function]
+                    Z3 --> AA3[Save all_columns.xlsx<br/>write.xlsx function]
                     
-                    AA1 --> BB1[Save common_columns_all.xls]
-                    AA2 --> BB2[Save common_columns_portion.xls]
-                    AA3 --> BB3[Save all_columns.xls]
+                    AA1 --> BB1[Save common_columns_all.xls<br/>write.xlsx function]
+                    AA3 --> BB3[Save all_columns.xls<br/>write.xlsx function]
                     
                     BB1 --> FF
-                    BB2 --> FF
-                    BB3 --> FF[Success Message: Files Combined and Saved]
-                    FF --> GG[End]
+                    BB3 --> FF[Success Message: Files Combined and Saved<br/>console confirmation]
+                    FF --> GG[End<br/>script completion]
                     E --> GG
-                    J --> GG
 
                     style A fill:#ff6b35,color:#fff,stroke:#000,stroke-width:3px
                     style B fill:#f7931e,color:#fff,stroke:#000,stroke-width:3px
@@ -137,11 +125,6 @@
                     style E fill:#dc2626,color:#fff,stroke:#000,stroke-width:3px
                     style F fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
                     style G fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style H fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
-                    style I fill:#ff006e,color:#fff,stroke:#000,stroke-width:3px
-                    style J fill:#dc2626,color:#fff,stroke:#000,stroke-width:3px
-                    style K fill:#3a86ff,color:#fff,stroke:#000,stroke-width:3px
-                    style L fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style M fill:#f7931e,color:#fff,stroke:#000,stroke-width:3px
                     style N fill:#ffd23f,color:#000,stroke:#000,stroke-width:3px
                     style O fill:#ff006e,color:#fff,stroke:#000,stroke-width:3px
@@ -152,32 +135,17 @@
                     style T fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style U fill:#3a86ff,color:#fff,stroke:#000,stroke-width:3px
                     style V fill:#f59e0b,color:#fff,stroke:#000,stroke-width:3px
-                    style CommonBranch fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
                     style AllBranch fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
-                    style CommonData fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
                     style AllData fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
                     style Z1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style Z2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style Z3 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style AA1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style AA2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style AA3 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style BB1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
-                    style BB2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style BB3 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style FF fill:#10b981,color:#fff,stroke:#000,stroke-width:3px
                     style GG fill:#ff6b35,color:#fff,stroke:#000,stroke-width:3px
             </div>
-        </div>
-        
-        <div style="text-align: center;">
-            <p style="color: #666; font-style: italic; font-size: 12px; margin: 5px 0;">Right-click to save as image</p>
-        </div>
-        
-        <div class="instructions" style="font-size: 11px; padding: 8px; margin-top: 8px;">
-            <h3 style="font-size: 12px; margin-top: 0;">Download Options:</h3>
-            <p style="margin: 2px 0;"><strong>Right-click:</strong> Save image as PNG/SVG</p>
-            <p style="margin: 2px 0;"><strong>Print:</strong> Ctrl+P → Save as PDF</p>
         </div>
     </div>
 
@@ -202,6 +170,7 @@
             }
         });
 
+      
     </script>
 </body>
 </html>
