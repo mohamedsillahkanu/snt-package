@@ -9,7 +9,7 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             background-color: white;
             display: flex;
             flex-direction: column;
@@ -18,18 +18,20 @@
         
         .container {
             background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 900px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             width: 100%;
+            max-width: 1400px;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
         
         h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 20px;
-            font-size: 22px;
+            margin-bottom: 15px;
+            font-size: 18px;
         }
         
         #flowchart {
@@ -103,18 +105,15 @@
                     T --> U[Create common_columns_all Dataset]
                     R -->|No| V[Message: Column Names Differ]
                     
-                    V --> W1[Common Columns Branch]
-                    V --> W2[All Columns Branch]
+                    V --> CommonBranch[Find Common Columns Intersection]
+                    V --> AllBranch[Keep All Columns from All Files]
                     
-                    W1 --> X1[Find Common Columns Intersection]
-                    X1 --> Y1[Create common_columns_portion Dataset]
-                    
-                    W2 --> X2[Keep All Columns from All Files]
-                    X2 --> Y2[Create all_columns Dataset with NAs]
+                    CommonBranch --> CommonData[Create common_columns_portion Dataset]
+                    AllBranch --> AllData[Create all_columns Dataset with NAs]
                     
                     U --> Z1[Save common_columns_all.csv]
-                    Y1 --> Z2[Save common_columns_portion.csv]
-                    Y2 --> Z3[Save all_columns.csv]
+                    CommonData --> Z2[Save common_columns_portion.csv]
+                    AllData --> Z3[Save all_columns.csv]
                     
                     Z1 --> AA1[Save common_columns_all.xlsx]
                     Z2 --> AA2[Save common_columns_portion.xlsx]
@@ -153,9 +152,10 @@
                     style T fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style U fill:#3a86ff,color:#fff,stroke:#000,stroke-width:3px
                     style V fill:#f59e0b,color:#fff,stroke:#000,stroke-width:3px
-                    style W fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
-                    style X fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
-                    style Y fill:#ff6b35,color:#fff,stroke:#000,stroke-width:3px
+                    style CommonBranch fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
+                    style AllBranch fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
+                    style CommonData fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:3px
+                    style AllData fill:#8338ec,color:#fff,stroke:#000,stroke-width:3px
                     style Z1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style Z2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
                     style Z3 fill:#06ffa5,color:#000,stroke:#000,stroke-width:3px
@@ -171,9 +171,14 @@
         </div>
         
         <div style="text-align: center;">
-            <p style="color: #666; font-style: italic;">Right-click on the flowchart below to save as image</p>
+            <p style="color: #666; font-style: italic; font-size: 12px; margin: 5px 0;">Right-click to save as image</p>
         </div>
-  
+        
+        <div class="instructions" style="font-size: 11px; padding: 8px; margin-top: 8px;">
+            <h3 style="font-size: 12px; margin-top: 0;">Download Options:</h3>
+            <p style="margin: 2px 0;"><strong>Right-click:</strong> Save image as PNG/SVG</p>
+            <p style="margin: 2px 0;"><strong>Print:</strong> Ctrl+P → Save as PDF</p>
+        </div>
     </div>
 
     <script>
@@ -185,8 +190,8 @@
                 useMaxWidth: true,
                 htmlLabels: true,
                 curve: 'basis',
-                nodeSpacing: 40,
-                rankSpacing: 30
+                nodeSpacing: 50,
+                rankSpacing: 40
             },
             themeVariables: {
                 background: '#ffffff',
