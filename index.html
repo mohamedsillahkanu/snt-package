@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>R Data Processing Flowchart</title>
+    <title>Routine Malaria Data Concatenation Flowchart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
     <style>
         body {
@@ -87,8 +87,8 @@
                     C --> D{Any Files Found?}
                     D -->|No| E[Stop: No Files Found]
                     D -->|Yes| F[Detect File Type from First File]
-                    F --> G[Display Detected File Type]
-                    G --> H[Define Reader Function Based on Extension]
+                    F --> G[Display Detected File Type (xlsx, xls, csv)]
+                    G --> H[Define Reader Function (read_excel or read_csv) Based on Extension]
                     H --> I{Supported File Type?}
                     I -->|No| J[Stop: Unsupported File Type]
                     I -->|Yes| K[Read and Clean Each File Loop]
