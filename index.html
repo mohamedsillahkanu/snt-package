@@ -87,7 +87,7 @@
                     C --> D{Any Files Found?}
                     D -->|No| E[Stop: No Files Found]
                     D -->|Yes| F[Detect File Type from First File]
-                    F --> G[Display Detected File Type: xlsx, csv]
+                    F --> G[Display Detected File Type: xlsx, xls, csv]
                     G --> H[Define Reader Function Based on Extension: read_excel, read_csv]
                     H --> I{Supported File Type?}
                     I -->|No| J[Stop: Unsupported File Type]
