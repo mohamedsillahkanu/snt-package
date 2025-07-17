@@ -28,7 +28,7 @@
         }
         
         h1 {
-            text-align: left;
+            text-align: center;
             color: #333;
             margin-bottom: 15px;
             font-size: 24px;
@@ -170,7 +170,17 @@
             }
         });
 
-   
+        // Alternative: Right-click save functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const svgElement = document.querySelector('#flowchart svg');
+                if (svgElement) {
+                    svgElement.style.backgroundColor = 'white';
+                    // Make SVG downloadable by right-click
+                    svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                }
+            }, 1000);
+        });
     </script>
 </body>
 </html>
