@@ -6,141 +6,93 @@
     <title>R Data Processing Flowchart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        * {
             margin: 0;
             padding: 0;
-            background-color: #f8f9fa;
             box-sizing: border-box;
-            height: 100vh;
-            width: 100vw;
+        }
+        
+        html, body {
+            height: 100%;
+            width: 100%;
             overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
         }
         
         .container {
-            background-color: white;
-            padding: 20px;
             width: 100vw;
             height: 100vh;
-            margin: 0;
-            box-sizing: border-box;
-            border: none;
-            border-radius: 0;
-            box-shadow: none;
             display: flex;
             flex-direction: column;
-        }
-        
-        @media (min-width: 768px) {
-            .container {
-                max-width: 95vw;
-            }
-        }
-        
-        @media (min-width: 1200px) {
-            .container {
-                max-width: 1200px;
-            }
+            background-color: white;
         }
         
         h1 {
             text-align: center;
             color: #333;
-            margin: 0 0 20px 0;
-            font-size: clamp(18px, 2.5vw, 28px);
+            padding: 10px;
+            font-size: clamp(14px, 2.5vw, 24px);
             font-weight: 600;
             flex-shrink: 0;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
         }
         
         #flowchart {
+            flex: 1;
             width: 100%;
-            height: calc(100vh - 80px);
-            background-color: white;
-            margin: 0;
-            padding: 10px;
-            border-radius: 0;
-            box-shadow: none;
-            overflow: auto;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            flex: 1;
-            box-sizing: border-box;
+            overflow: auto;
+            padding: 10px;
         }
         
         #flowchart .mermaid {
             width: 100%;
             height: 100%;
-            min-width: 100%;
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
-        @media (max-width: 1024px) {
-            #flowchart .mermaid {
-                min-width: 700px;
-            }
+        #flowchart svg {
+            max-width: 100% !important;
+            max-height: 100% !important;
+            width: auto !important;
+            height: auto !important;
         }
         
+        /* Mobile optimization */
         @media (max-width: 768px) {
-            #flowchart .mermaid {
-                min-width: 600px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            body {
-                padding: 5px;
-            }
-            .container {
-                padding: 10px;
+            h1 {
+                padding: 8px;
+                font-size: clamp(12px, 4vw, 18px);
             }
             #flowchart {
                 padding: 5px;
             }
-            #flowchart .mermaid {
-                min-width: 500px;
+        }
+        
+        /* Tablet optimization */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            h1 {
+                padding: 12px;
+            }
+            #flowchart {
+                padding: 15px;
             }
         }
         
-        .instructions {
-            margin-top: 10px;
-            padding: 12px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 8px;
-            font-size: 12px;
-        }
-        
-        .instructions h3 {
-            margin-top: 0;
-            margin-bottom: 8px;
-            color: #495057;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .download-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 8px;
-        }
-        
-        .download-grid p {
-            margin: 0;
-            color: #495057;
-            font-size: 11px;
-        }
-        
-        @media print {
-            body {
-                background-color: white;
-                padding: 0;
+        /* Desktop optimization */
+        @media (min-width: 1025px) {
+            h1 {
+                padding: 15px;
             }
-            .container {
-                box-shadow: none;
-                border: none;
-                padding: 10px;
-                max-width: 100%;
+            #flowchart {
+                padding: 20px;
             }
         }
     </style>
@@ -215,43 +167,64 @@
                     style GG fill:#ff6b35,color:#fff,stroke:#000,stroke-width:2px
             </div>
         </div>
-        
-
     </div>
 
     <script>
-        // Initialize Mermaid with A4-optimized settings
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: 'default',
-            flowchart: {
-                useMaxWidth: true,
-                htmlLabels: true,
-                curve: 'basis',
-                nodeSpacing: Math.max(60, window.innerWidth * 0.06),
-                rankSpacing: Math.max(50, window.innerHeight * 0.06),
-                padding: 15
-            },
-            themeVariables: {
-                background: '#ffffff',
-                primaryColor: '#ffffff',
-                primaryTextColor: '#000000',
-                primaryBorderColor: '#000000',
-                lineColor: '#374151',
-                fontSize: Math.max(11, Math.min(16, window.innerWidth * 0.01)) + 'px'
-            }
+        function initializeMermaid() {
+            const isMobile = window.innerWidth <= 768;
+            const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+            
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'default',
+                flowchart: {
+                    useMaxWidth: true,
+                    htmlLabels: true,
+                    curve: 'basis',
+                    nodeSpacing: isMobile ? 30 : isTablet ? 50 : 70,
+                    rankSpacing: isMobile ? 25 : isTablet ? 40 : 60,
+                    padding: 10
+                },
+                themeVariables: {
+                    background: '#ffffff',
+                    primaryColor: '#ffffff',
+                    primaryTextColor: '#000000',
+                    primaryBorderColor: '#000000',
+                    lineColor: '#374151',
+                    fontSize: isMobile ? '10px' : isTablet ? '12px' : '14px'
+                }
+            });
+        }
+
+        // Initialize on load
+        initializeMermaid();
+
+        // Re-initialize on resize for optimal fit
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                location.reload(); // Quick fix for perfect responsive behavior
+            }, 300);
         });
 
-        // Enhance SVG for better download quality
+        // Ensure SVG fits perfectly
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 const svgElement = document.querySelector('#flowchart svg');
                 if (svgElement) {
                     svgElement.style.backgroundColor = 'white';
                     svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                    // Optimize for A4 print
-                    svgElement.style.maxWidth = '100%';
-                    svgElement.style.height = 'auto';
+                    
+                    // Force center alignment
+                    const container = document.querySelector('#flowchart .mermaid');
+                    if (container) {
+                        container.style.display = 'flex';
+                        container.style.justifyContent = 'center';
+                        container.style.alignItems = 'center';
+                        container.style.width = '100%';
+                        container.style.height = '100%';
+                    }
                 }
             }, 1000);
         });
