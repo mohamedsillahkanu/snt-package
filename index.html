@@ -13,12 +13,13 @@
             background-color: #f8f9fa;
             box-sizing: border-box;
             height: 100vh;
+            width: 100vw;
             overflow: hidden;
         }
         
         .container {
             background-color: white;
-            padding: 10px;
+            padding: 20px;
             width: 100vw;
             height: 100vh;
             margin: 0;
@@ -45,18 +46,18 @@
         h1 {
             text-align: center;
             color: #333;
-            margin: 0 0 10px 0;
-            font-size: clamp(16px, 3vw, 20px);
+            margin: 0 0 20px 0;
+            font-size: clamp(18px, 2.5vw, 28px);
             font-weight: 600;
             flex-shrink: 0;
         }
         
         #flowchart {
             width: 100%;
-            height: calc(100vh - 60px);
+            height: calc(100vh - 80px);
             background-color: white;
             margin: 0;
-            padding: 0;
+            padding: 10px;
             border-radius: 0;
             box-shadow: none;
             overflow: auto;
@@ -64,6 +65,7 @@
             justify-content: center;
             align-items: center;
             flex: 1;
+            box-sizing: border-box;
         }
         
         #flowchart .mermaid {
@@ -226,9 +228,9 @@
                 useMaxWidth: true,
                 htmlLabels: true,
                 curve: 'basis',
-                nodeSpacing: window.innerWidth < 768 ? 50 : window.innerWidth < 1024 ? 65 : 80,
-                rankSpacing: window.innerWidth < 768 ? 45 : window.innerWidth < 1024 ? 55 : 70,
-                padding: 10
+                nodeSpacing: Math.max(60, window.innerWidth * 0.06),
+                rankSpacing: Math.max(50, window.innerHeight * 0.06),
+                padding: 15
             },
             themeVariables: {
                 background: '#ffffff',
@@ -236,7 +238,7 @@
                 primaryTextColor: '#000000',
                 primaryBorderColor: '#000000',
                 lineColor: '#374151',
-                fontSize: window.innerWidth < 768 ? '10px' : window.innerWidth < 1024 ? '11px' : '12px'
+                fontSize: Math.max(11, Math.min(16, window.innerWidth * 0.01)) + 'px'
             }
         });
 
