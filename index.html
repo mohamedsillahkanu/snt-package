@@ -50,12 +50,16 @@
             border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.05);
             overflow: visible;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         #flowchart .mermaid {
             width: 100%;
             height: auto;
             max-width: 100%;
+            text-align: center;
         }
         
         .instructions {
@@ -186,8 +190,8 @@
                 useMaxWidth: true,
                 htmlLabels: true,
                 curve: 'basis',
-                nodeSpacing: 40,
-                rankSpacing: 35,
+                nodeSpacing: 80,
+                rankSpacing: 70,
                 padding: 10
             },
             themeVariables: {
