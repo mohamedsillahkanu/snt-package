@@ -18,7 +18,7 @@
         
         .container {
             background-color: white;
-            padding: 10px;
+            padding: 20px;
             border-radius: 0;
             box-shadow: none;
             width: 100vw;
@@ -43,8 +43,9 @@
         h1 {
             text-align: center;
             color: #333;
-            margin: 5px 0 10px 0;
-            font-size: 18px;
+            margin: 10px 0 20px 0;
+            font-size: 24px;
+            font-weight: 600;
             flex-shrink: 0;
         }
         
@@ -53,18 +54,18 @@
             flex: 1;
             background-color: white;
             margin: 0;
-            padding: 10px;
+            padding: 20px;
             border-radius: 0;
             box-shadow: none;
             overflow: auto;
-            min-height: calc(100vh - 60px);
+            min-height: calc(100vh - 120px);
         }
         
         #flowchart .mermaid {
             width: 100%;
             height: auto;
-            min-width: 1200px;
-            min-height: 800px;
+            min-width: 1400px;
+            min-height: 1000px;
         }
         
         @media (max-width: 768px) {
@@ -203,9 +204,9 @@
                 useMaxWidth: false,
                 htmlLabels: true,
                 curve: 'basis',
-                nodeSpacing: 80,
-                rankSpacing: 100,
-                padding: 20
+                nodeSpacing: 120,
+                rankSpacing: 150,
+                padding: 30
             },
             themeVariables: {
                 background: '#ffffff',
@@ -213,7 +214,7 @@
                 primaryTextColor: '#000000',
                 primaryBorderColor: '#000000',
                 lineColor: '#374151',
-                fontSize: '13px'
+                fontSize: '14px'
             }
         });
 
