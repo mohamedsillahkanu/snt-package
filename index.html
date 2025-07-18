@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R Data Processing Flowchart</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            box-sizing: border-box;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 10px;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            box-sizing: border-box;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                max-width: 95vw;
+            }
+        }
+        
+        @media (min-width: 1200px) {
+            .container {
+                max-width: 1200px;
+            }
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: clamp(16px, 3vw, 20px);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        #flowchart {
+            width: 100%;
+            height: calc(100vh - 60px);
+            background-color: white;
+            margin: 0;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+        }
+        
+        #flowchart .mermaid {
+            width: 100%;
+            height: 100%;
+            min-width: 100%;
+            text-align: center;
+        }
+        
+        @media (max-width: 1024px) {
+            #flowchart .mermaid {
+                min-width: 700px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            #flowchart .mermaid {
+                min-width: 600px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            .container {
+                padding: 10px;
+            }
+            #flowchart {
+                padding: 5px;
+            }
+            #flowchart .mermaid {
+                min-width: 500px;
+            }
+        }
+        
+        .instructions {
+            margin-top: 10px;
+            padding: 12px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #495057;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .download-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .download-grid p {
+            margin: 0;
+            color: #495057;
+            font-size: 11px;
+        }
+        
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                border: none;
+                padding: 10px;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>R Data Processing Script Flowchart</h1>
+        
+        <div id="flowchart">
+            <div class="mermaid">
+                flowchart TD
+                    A[Load Required Libraries<br/>readxl, readr, openxlsx, dplyr, janitor, tools] --> B[Set Folder Path<br/>user-defined path]
+                    B --> C[Searching for xlsx, xls and csv files<br/>scanning folder contents]
+                    C --> D{Any Files Found?}
+                    D -->|No| E[Stop: No Files Found<br/>error message]
+                    D -->|Yes| F[List All Files in Folder<br/>with .csv, .xlsx, .xls extensions]
+                    F --> G[Detect File Type from First File<br/>using file_ext function]
+                    G --> M[Clean Column Names with janitor<br/>clean_names function]
+                    M --> N[Remove Leading Blank Rows<br/>while loop for NA rows]
+                    N --> O{More Files to Process?<br/>continue lapply loop}
+                    O -->|Yes| G
+                    O -->|No| P[Extract Column Names from All Files<br/>lapply with names function]
+                    P --> Q[Check if All Files Have Same Columns<br/>setequal comparison]
+                    Q --> R{All Columns Identical?<br/>boolean check}
+                    R -->|Yes| S[Message: Identical Columns<br/>console output]
+                    S --> T[Combine All Files Directly<br/>bind_rows function]
+                    T --> U[Create common_columns_all Dataset<br/>single combined dataframe]
+                    R -->|No| V[Message: Column Names Differ<br/>console warning]
+                    V --> W[Keep All Columns from All Files<br/>bind_rows with NA fill]
+                    W --> X[Create all_columns Dataset with NAs<br/>union of all columns]
+                    
+                    U --> Z1[Save common_columns_all.csv<br/>write_csv function]
+                    X --> Z2[Save all_columns.csv<br/>write_csv function]
+                    
+                    Z1 --> AA1[Save common_columns_all.xlsx<br/>write.xlsx function]
+                    Z2 --> AA2[Save all_columns.xlsx<br/>write.xlsx function]
+                    
+                    AA1 --> BB1[Save common_columns_all.xls<br/>write.xlsx function]
+                    AA2 --> BB2[Save all_columns.xls<br/>write.xlsx function]
+                    
+                    BB1 --> FF[Success Message: Files Combined and Saved<br/>console confirmation]
+                    BB2 --> FF
+                    FF --> GG[End<br/>script completion]
+                    E --> GG
+
+                    style A fill:#ff6b35,color:#fff,stroke:#000,stroke-width:2px
+                    style B fill:#f7931e,color:#fff,stroke:#000,stroke-width:2px
+                    style C fill:#ffd23f,color:#000,stroke:#000,stroke-width:2px
+                    style D fill:#ff006e,color:#fff,stroke:#000,stroke-width:2px
+                    style E fill:#dc2626,color:#fff,stroke:#000,stroke-width:2px
+                    style F fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:2px
+                    style G fill:#06ffa5,color:#000,stroke:#000,stroke-width:2px
+                    style M fill:#f7931e,color:#fff,stroke:#000,stroke-width:2px
+                    style N fill:#ffd23f,color:#000,stroke:#000,stroke-width:2px
+                    style O fill:#ff006e,color:#fff,stroke:#000,stroke-width:2px
+                    style P fill:#4ecdc4,color:#fff,stroke:#000,stroke-width:2px
+                    style Q fill:#8338ec,color:#fff,stroke:#000,stroke-width:2px
+                    style R fill:#ff006e,color:#fff,stroke:#000,stroke-width:2px
+                    style S fill:#10b981,color:#fff,stroke:#000,stroke-width:2px
+                    style T fill:#06ffa5,color:#000,stroke:#000,stroke-width:2px
+                    style U fill:#3a86ff,color:#fff,stroke:#000,stroke-width:2px
+                    style V fill:#f59e0b,color:#fff,stroke:#000,stroke-width:2px
+                    style W fill:#8338ec,color:#fff,stroke:#000,stroke-width:2px
+                    style X fill:#8338ec,color:#fff,stroke:#000,stroke-width:2px
+                    style Z1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:2px
+                    style Z2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:2px
+                    style AA1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:2px
+                    style AA2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:2px
+                    style BB1 fill:#06ffa5,color:#000,stroke:#000,stroke-width:2px
+                    style BB2 fill:#06ffa5,color:#000,stroke:#000,stroke-width:2px
+                    style FF fill:#10b981,color:#fff,stroke:#000,stroke-width:2px
+                    style GG fill:#ff6b35,color:#fff,stroke:#000,stroke-width:2px
+            </div>
+        </div>
+        
+
+    </div>
+
+    <script>
+        // Initialize Mermaid with A4-optimized settings
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                nodeSpacing: window.innerWidth < 768 ? 50 : window.innerWidth < 1024 ? 65 : 80,
+                rankSpacing: window.innerWidth < 768 ? 45 : window.innerWidth < 1024 ? 55 : 70,
+                padding: 10
+            },
+            themeVariables: {
+                background: '#ffffff',
+                primaryColor: '#ffffff',
+                primaryTextColor: '#000000',
+                primaryBorderColor: '#000000',
+                lineColor: '#374151',
+                fontSize: window.innerWidth < 768 ? '10px' : window.innerWidth < 1024 ? '11px' : '12px'
+            }
+        });
+
+        // Enhance SVG for better download quality
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const svgElement = document.querySelector('#flowchart svg');
+                if (svgElement) {
+                    svgElement.style.backgroundColor = 'white';
+                    svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                    // Optimize for A4 print
+                    svgElement.style.maxWidth = '100%';
+                    svgElement.style.height = 'auto';
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
