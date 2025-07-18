@@ -6,135 +6,73 @@
     <title>R Data Processing Flowchart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        * {
             margin: 0;
-            padding: 10px;
-            background-color: #f8f9fa;
+            padding: 0;
             box-sizing: border-box;
-            min-height: 100vh;
+        }
+        
+        html, body {
+            height: 100%;
+            width: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
         }
         
         .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
             background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 100vw;
-            margin: 0 auto;
-            box-sizing: border-box;
-            border: 1px solid #e1e5e9;
-        }
-        
-        @media (min-width: 768px) {
-            .container {
-                max-width: 95vw;
-            }
-        }
-        
-        @media (min-width: 1200px) {
-            .container {
-                max-width: 1200px;
-            }
+            padding: 20px;
         }
         
         h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 15px;
-            font-size: 18px;
+            margin-bottom: 20px;
+            font-size: clamp(16px, 3vw, 28px);
             font-weight: 600;
+            flex-shrink: 0;
         }
         
-        #flowchart {
+        .flowchart-container {
+            flex: 1;
             width: 100%;
-            height: auto;
             background-color: white;
-            margin: 0 auto;
-            padding: 10px;
-            border-radius: 6px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
-            overflow-x: auto;
-            overflow-y: visible;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+            overflow: auto;
         }
         
-        #flowchart .mermaid {
+        .mermaid {
             width: 100%;
-            height: auto;
-            min-width: 800px;
-            text-align: center;
+            height: 100%;
+            min-height: 600px;
         }
         
-        @media (max-width: 1024px) {
-            #flowchart .mermaid {
-                min-width: 700px;
-            }
-        }
-        
+        /* Mobile styles */
         @media (max-width: 768px) {
-            #flowchart .mermaid {
-                min-width: 600px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            body {
-                padding: 5px;
-            }
             .container {
                 padding: 10px;
             }
-            #flowchart {
-                padding: 5px;
+            .flowchart-container {
+                padding: 15px;
             }
-            #flowchart .mermaid {
-                min-width: 500px;
+            .mermaid {
+                min-height: 500px;
             }
         }
         
-        .instructions {
-            margin-top: 10px;
-            padding: 12px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 8px;
-            font-size: 12px;
-        }
-        
-        .instructions h3 {
-            margin-top: 0;
-            margin-bottom: 8px;
-            color: #495057;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .download-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 8px;
-        }
-        
-        .download-grid p {
-            margin: 0;
-            color: #495057;
-            font-size: 11px;
-        }
-        
-        @media print {
-            body {
-                background-color: white;
-                padding: 0;
-            }
+        /* Tablet styles */
+        @media (min-width: 769px) and (max-width: 1024px) {
             .container {
-                box-shadow: none;
-                border: none;
-                padding: 10px;
-                max-width: 100%;
+                padding: 15px;
+            }
+            .flowchart-container {
+                padding: 25px;
             }
         }
     </style>
@@ -143,7 +81,7 @@
     <div class="container">
         <h1>R Data Processing Script Flowchart</h1>
         
-        <div id="flowchart">
+        <div class="flowchart-container">
             <div class="mermaid">
                 flowchart TD
                     A[Load Required Libraries<br/>readxl, readr, openxlsx, dplyr, janitor, tools] --> B[Set Folder Path<br/>user-defined path]
@@ -209,22 +147,20 @@
                     style GG fill:#ff6b35,color:#fff,stroke:#000,stroke-width:2px
             </div>
         </div>
-        
-
     </div>
 
     <script>
-        // Initialize Mermaid with A4-optimized settings
+        // Initialize Mermaid with optimized settings for visibility
         mermaid.initialize({
             startOnLoad: true,
             theme: 'default',
             flowchart: {
                 useMaxWidth: true,
                 htmlLabels: true,
-                curve: 'basis',
-                nodeSpacing: window.innerWidth < 768 ? 50 : window.innerWidth < 1024 ? 65 : 80,
-                rankSpacing: window.innerWidth < 768 ? 45 : window.innerWidth < 1024 ? 55 : 70,
-                padding: 10
+                curve: 'linear',
+                nodeSpacing: 100,
+                rankSpacing: 80,
+                padding: 20
             },
             themeVariables: {
                 background: '#ffffff',
@@ -232,22 +168,22 @@
                 primaryTextColor: '#000000',
                 primaryBorderColor: '#000000',
                 lineColor: '#374151',
-                fontSize: window.innerWidth < 768 ? '10px' : window.innerWidth < 1024 ? '11px' : '12px'
+                fontSize: '13px',
+                fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
             }
         });
 
-        // Enhance SVG for better download quality
+        // Ensure proper rendering after page load
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
-                const svgElement = document.querySelector('#flowchart svg');
+                const svgElement = document.querySelector('.mermaid svg');
                 if (svgElement) {
                     svgElement.style.backgroundColor = 'white';
-                    svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                    // Optimize for A4 print
-                    svgElement.style.maxWidth = '100%';
+                    svgElement.style.width = '100%';
                     svgElement.style.height = 'auto';
+                    svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
                 }
-            }, 1000);
+            }, 1500);
         });
     </script>
 </body>
