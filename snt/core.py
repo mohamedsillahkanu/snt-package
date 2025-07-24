@@ -1899,6 +1899,149 @@ def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
     
     print(f"\nCreated {len(first_dnam_values)} individual plots and 1 subplot grid")
     print(f"All plots saved in: {output_dir}")
+    
+    # Create subplot plots for each FIRST_DNAM showing all FIRST_CHIE (4 columns, n rows)
+    for first_dnam in first_dnam_values:
+        # Filter data for this FIRST_DNAM
+        dnam_df = df[df['FIRST_DNAM'] == first_dnam]
+        
+        if len(dnam_df) == 0:
+            continue
+            
+        # Get unique FIRST_CHIE values for this FIRST_DNAM
+        first_chie_values = dnam_df['FIRST_CHIE'].dropna().unique()
+        
+        if len(first_chie_values) == 0:
+            continue
+        
+        # Define colors for FIRST_CHIE within this FIRST_DNAM
+        chie_colors = plt.cm.tab10(np.linspace(0, 1, min(len(first_chie_values), 10)))
+        if len(first_chie_values) > 10:
+            chie_colors2 = plt.cm.tab20(np.linspace(0, 1, len(first_chie_values) - 10))
+            chie_colors = np.concatenate([chie_colors, chie_colors2])
+        chie_color_map = dict(zip(first_chie_values, chie_colors))
+        
+        # Calculate grid dimensions (4 columns, n rows)
+        n_cols = 4
+        n_rows = int(np.ceil(len(first_chie_values) / n_cols))
+        
+        # Create figure for this FIRST_DNAM
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 5 * n_rows))
+        fig.suptitle(f"Annual Parasite Incidence Trend by FIRST_CHIE - {first_dnam} (2021–2024)", 
+                     fontsize=16, fontweight='bold', y=0.98)
+        
+        # Handle single row case
+        if n_rows == 1:
+            axes = axes.reshape(1, -1) if len(first_chie_values) > 1 else [axes]
+        
+        # Flatten axes for easier iteration
+        axes_flat = axes.flatten()
+        
+        plot_idx = 0
+        for first_chie in first_chie_values:
+            if plot_idx >= len(axes_flat):
+                break
+                
+            # Filter data for this FIRST_CHIE
+            chie_df = dnam_df[dnam_df['FIRST_CHIE'] == first_chie]
+            
+            if len(chie_df) == 0:
+                plot_idx += 1
+                continue
+                
+            # Compute averages per year for this FIRST_CHIE
+            averages = chie_df[year_cols].mean(axis=0)
+            avg_df = averages.reset_index()
+            avg_df.columns = ['Year', 'Crude_Incidence']
+            avg_df['Year'] = avg_df['Year'].str.extract(r'(\d{4})').astype(int)
+            avg_df = avg_df.sort_values('Year').reset_index(drop=True)
+            
+            ax = axes_flat[plot_idx]
+            
+            # Calculate overall change for title
+            valid_data = avg_df.dropna(subset=['Crude_Incidence'])
+            if len(valid_data) >= 2:
+                y_start = valid_data['Crude_Incidence'].iloc[0]
+                y_end = valid_data['Crude_Incidence'].iloc[-1]
+                overall_change = ((y_end - y_start) / y_start) * 100
+                title_text = f"{first_chie}\nOverall: {overall_change:+.1f}%"
+            else:
+                title_text = f"{first_chie}\nInsufficient data"
+            
+            # Plot the data with unique color for this FIRST_CHIE
+            ax.plot(
+                avg_df['Year'],
+                avg_df['Crude_Incidence'],
+                marker='o',
+                color=chie_color_map[first_chie],
+                linewidth=2,
+                markersize=4,
+                label=first_chie
+            )
+            
+            # Add trend line if we have enough data points
+            valid_points = avg_df.dropna(subset=['Crude_Incidence'])
+            if len(valid_points) >= 2:
+                fit = np.polyfit(valid_points['Year'], valid_points['Crude_Incidence'], 1)
+                trend_line = np.poly1d(fit)(avg_df['Year'])
+                ax.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=1, alpha=0.7)
+            
+            # Add percentage change annotations between consecutive points
+            for i in range(1, len(avg_df)):
+                y1 = avg_df.loc[i - 1, 'Crude_Incidence']
+                y2 = avg_df.loc[i, 'Crude_Incidence']
+                x1 = avg_df.loc[i - 1, 'Year']
+                x2 = avg_df.loc[i, 'Year']
+                
+                if pd.notna(y1) and pd.notna(y2):
+                    x_mid = (x1 + x2) / 2
+                    y_mid = (y1 + y2) / 2
+                    pct_change = ((y2 - y1) / y1) * 100
+                    label = f"{pct_change:+.0f}%"
+                    
+                    ax.text(
+                        x_mid, y_mid + 1, label,
+                        fontsize=7, fontweight='bold',
+                        ha='center', va='bottom',
+                        bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.2')
+                    )
+            
+            # Format subplot
+            ax.set_title(title_text, fontsize=9, fontweight='bold', pad=5)
+            ax.set_xticks([2021, 2022, 2023, 2024])
+            ax.tick_params(axis='x', labelsize=8)
+            ax.tick_params(axis='y', labelsize=8)
+            ax.grid(True, alpha=0.3)
+            
+            # Set y-axis limits based on data
+            y_values = avg_df['Crude_Incidence'].dropna()
+            if len(y_values) > 0:
+                y_min = max(0, y_values.min() - 2)
+                y_max = y_values.max() + 3  # Extra space for annotations
+                ax.set_ylim(y_min, y_max)
+            
+            plot_idx += 1
+        
+        # Hide unused subplots
+        for i in range(plot_idx, len(axes_flat)):
+            axes_flat[i].set_visible(False)
+        
+        # Add common labels
+        fig.text(0.5, 0.02, 'Year', ha='center', va='center', fontsize=12, fontweight='bold')
+        fig.text(0.02, 0.5, 'Annual Parasite Incidence', ha='center', va='center', 
+                 rotation='vertical', fontsize=12, fontweight='bold')
+        
+        # Save subplot version for this FIRST_DNAM
+        safe_dnam_name = "".join(c for c in first_dnam if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        chie_subplot_path = os.path.join(output_dir, f'crude_incidence_CHIE_subplots_{safe_dnam_name}.png')
+        plt.tight_layout(rect=[0.03, 0.03, 1, 0.96])
+        plt.savefig(chie_subplot_path, dpi=400, bbox_inches='tight')
+        plt.close()
+        print(f"[Saved] {chie_subplot_path}")
+    
+    print(f"\nCreated {len(first_dnam_values)} individual plots, 1 DNAM subplot grid, and {len(first_dnam_values)} CHIE subplot grids")
+    print(f"All plots saved in: {output_dir}")
+
 
 ### National Adjusted1
 import matplotlib.pyplot as plt
