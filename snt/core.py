@@ -1581,7 +1581,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
             )
 
     # X-axis
-    ax.set_xticks(list(range(2015, 2025)))
+    ax.set_xticks(list(range(2021, 2025)))
     ax.set_xlim(2015, 2024)
     ax.tick_params(axis='x', labelsize=9)
     ax.tick_params(axis='y', labelsize=9)
