@@ -1632,6 +1632,232 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     plt.close()
     print(f"[Saved] {output_path}")
 
+def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
+    import os
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import numpy as np
+    import re
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Read data
+    df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
+    
+    # Identify crude incidence columns for 2021-2024
+    pattern = re.compile(r'^crude_incidence_(\d{4})$')
+    year_cols = [col for col in df.columns 
+                 if pattern.match(col) and 2021 <= int(pattern.match(col).group(1)) <= 2024]
+    
+    # Get unique FIRST_DNAM values
+    first_dnam_values = df['FIRST_DNAM'].dropna().unique()
+    
+    # Define colors for each FIRST_DNAM
+    colors = plt.cm.Set3(np.linspace(0, 1, len(first_dnam_values)))
+    color_map = dict(zip(first_dnam_values, colors))
+    
+    # Store data for combined plot
+    combined_data = {}
+    
+    # Create individual plots for each FIRST_DNAM
+    for first_dnam in first_dnam_values:
+        # Filter data for this FIRST_DNAM
+        dnam_df = df[df['FIRST_DNAM'] == first_dnam]
+        
+        if len(dnam_df) == 0:
+            continue
+            
+        # Compute averages per year for this FIRST_DNAM
+        averages = dnam_df[year_cols].mean(axis=0)
+        avg_df = averages.reset_index()
+        avg_df.columns = ['Year', 'Crude_Incidence']
+        avg_df['Year'] = avg_df['Year'].str.extract(r'(\d{4})').astype(int)
+        avg_df = avg_df.sort_values('Year').reset_index(drop=True)
+        
+        # Store for combined plot
+        combined_data[first_dnam] = avg_df.copy()
+        
+        # Skip if no valid data
+        if avg_df['Crude_Incidence'].isna().all():
+            continue
+            
+        # Compute overall change (first to last year)
+        valid_data = avg_df.dropna(subset=['Crude_Incidence'])
+        if len(valid_data) >= 2:
+            y_start = valid_data['Crude_Incidence'].iloc[0]
+            y_end = valid_data['Crude_Incidence'].iloc[-1]
+            overall_change = ((y_end - y_start) / y_start) * 100
+            subtitle_text = f"Change from {valid_data['Year'].iloc[0]} to {valid_data['Year'].iloc[-1]}: {overall_change:+.1f}%"
+        else:
+            subtitle_text = "Insufficient data for trend calculation"
+        
+        # Create individual plot
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        # Plot line with markers
+        ax.plot(
+            avg_df['Year'],
+            avg_df['Crude_Incidence'],
+            marker='o',
+            color=color_map[first_dnam],
+            linewidth=2.5,
+            markersize=8,
+            label=first_dnam
+        )
+        
+        # Add trend line if we have enough data points
+        valid_points = avg_df.dropna(subset=['Crude_Incidence'])
+        if len(valid_points) >= 2:
+            fit = np.polyfit(valid_points['Year'], valid_points['Crude_Incidence'], 1)
+            trend_line = np.poly1d(fit)(avg_df['Year'])
+            ax.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=2, label='Trend')
+        
+        # Annotate crude incidence values above each point
+        for i, row in avg_df.iterrows():
+            year = row['Year']
+            value = row['Crude_Incidence']
+            if pd.notna(value):
+                ax.text(
+                    year, value + (avg_df['Crude_Incidence'].max() * 0.05), f"{value:.1f}",
+                    fontsize=9, fontweight='bold',
+                    ha='center', va='bottom',
+                    bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
+                )
+        
+        # Annotate % change between consecutive points
+        for i in range(1, len(avg_df)):
+            y1 = avg_df.loc[i - 1, 'Crude_Incidence']
+            y2 = avg_df.loc[i, 'Crude_Incidence']
+            x1 = avg_df.loc[i - 1, 'Year']
+            x2 = avg_df.loc[i, 'Year']
+            
+            if pd.notna(y1) and pd.notna(y2):
+                x_mid = (x1 + x2) / 2
+                y_mid = (y1 + y2) / 2
+                pct_change = ((y2 - y1) / y1) * 100
+                label = f"{pct_change:+.0f}%"
+                
+                ax.text(
+                    x_mid, y_mid + (avg_df['Crude_Incidence'].max() * 0.03), label,
+                    fontsize=8, fontweight='bold',
+                    ha='center', va='bottom',
+                    bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
+                )
+        
+        # Format axes
+        ax.set_xticks(list(range(2021, 2025)))
+        ax.set_xlim(2020.5, 2024.5)
+        ax.tick_params(axis='x', labelsize=9)
+        ax.tick_params(axis='y', labelsize=9)
+        
+        # Dynamic Y-axis
+        y_values = avg_df['Crude_Incidence'].dropna()
+        if len(y_values) > 0:
+            y_min = np.floor(y_values.min() / 5) * 5
+            y_max = np.ceil(y_values.max() / 5) * 5
+            y_range = y_max - y_min
+            
+            if y_range <= 25:
+                step = 5
+            elif y_range <= 50:
+                step = 10
+            else:
+                step = 20
+                
+            ax.set_yticks(np.arange(y_min, y_max + step, step))
+            ax.set_ylim(y_min, y_max + step * 1.1)  # Add some padding for annotations
+        
+        # Titles and labels
+        main_title = f"Annual Parasite Incidence Trend - {first_dnam} (2021–2024)"
+        ax.set_title(main_title, fontsize=12, fontweight='bold', pad=15)
+        ax.set_xlabel("Year", fontsize=10, fontweight='bold')
+        ax.set_ylabel("Annual Parasite Incidence", fontsize=10, fontweight='bold')
+        ax.legend(fontsize=9)
+        
+        # Add subtitle
+        ax.text(
+            0.5, 0.95, subtitle_text,
+            transform=ax.transAxes,
+            fontsize=9, fontweight='bold',
+            ha='center', va='bottom',
+            bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
+        )
+        
+        # Save individual plot
+        safe_filename = "".join(c for c in first_dnam if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        output_path = os.path.join(output_dir, f'crude_incidence_trend_{safe_filename}.png')
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=400, bbox_inches='tight')
+        plt.close()
+        print(f"[Saved] {output_path}")
+    
+    # Create combined plot with all FIRST_DNAM values
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    for first_dnam, avg_df in combined_data.items():
+        if avg_df['Crude_Incidence'].isna().all():
+            continue
+            
+        ax.plot(
+            avg_df['Year'],
+            avg_df['Crude_Incidence'],
+            marker='o',
+            color=color_map[first_dnam],
+            linewidth=2.5,
+            markersize=6,
+            label=first_dnam
+        )
+    
+    # Format combined plot
+    ax.set_xticks(list(range(2021, 2025)))
+    ax.set_xlim(2020.5, 2024.5)
+    ax.tick_params(axis='x', labelsize=10)
+    ax.tick_params(axis='y', labelsize=10)
+    
+    # Dynamic Y-axis for combined plot
+    all_values = []
+    for avg_df in combined_data.values():
+        all_values.extend(avg_df['Crude_Incidence'].dropna().tolist())
+    
+    if all_values:
+        y_min = np.floor(min(all_values) / 5) * 5
+        y_max = np.ceil(max(all_values) / 5) * 5
+        y_range = y_max - y_min
+        
+        if y_range <= 25:
+            step = 5
+        elif y_range <= 50:
+            step = 10
+        else:
+            step = 20
+            
+        ax.set_yticks(np.arange(y_min, y_max + step, step))
+        ax.set_ylim(y_min, y_max + step)
+    
+    # Titles and labels for combined plot
+    ax.set_title("Annual Parasite Incidence Trend by FIRST_DNAM (2021–2024)", 
+                 fontsize=14, fontweight='bold', pad=20)
+    ax.set_xlabel("Year", fontsize=12, fontweight='bold')
+    ax.set_ylabel("Annual Parasite Incidence", fontsize=12, fontweight='bold')
+    
+    # Legend on the right side
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9)
+    
+    # Add grid for better readability
+    ax.grid(True, alpha=0.3)
+    
+    # Save combined plot
+    combined_output_path = os.path.join(output_dir, 'crude_incidence_trend_combined_all_FIRST_DNAM.png')
+    plt.tight_layout()
+    plt.savefig(combined_output_path, dpi=400, bbox_inches='tight')
+    plt.close()
+    print(f"[Saved] {combined_output_path}")
+    
+    print(f"\nCreated {len(first_dnam_values)} individual plots and 1 combined plot")
+    print(f"All plots saved in: {output_dir}")
+
+
 
 ### National Adjusted1
 import matplotlib.pyplot as plt
