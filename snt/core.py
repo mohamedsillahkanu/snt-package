@@ -1516,7 +1516,9 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     # Identify crude incidence columns
     df = pd.read_excel("input_files/others/2024_snt_data.xlsx")
     pattern = re.compile(r'^crude_incidence_(\d{4})$')
-    year_cols = [col for col in df.columns if pattern.match(col)]
+    #year_cols = [col for col in df.columns if pattern.match(col)]
+    year_cols = [col for col in df.columns 
+                 if pattern.match(col) and 2021 <= int(pattern.match(col).group(1)) <= 2024]
 
     # Compute national averages per year
     averages = df[year_cols].mean(axis=0)
