@@ -1605,7 +1605,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     ax.set_ylim(y_min, y_max + step)
 
     # Main title
-    main_title = "Annual Parasite Incidence Trend (2015–2024)"
+    main_title = "Annual Parasite Incidence Trend (2021–2024)"
     subtitle_text = f"Change from {avg_df['Year'].iloc[0]} to {avg_df['Year'].iloc[-1]}: {overall_change:+.1f}%"
     
     # Set main title
