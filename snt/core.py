@@ -1653,8 +1653,12 @@ def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
     # Get unique FIRST_DNAM values
     first_dnam_values = df['FIRST_DNAM'].dropna().unique()
     
-    # Define colors for each FIRST_DNAM
-    colors = plt.cm.Set3(np.linspace(0, 1, len(first_dnam_values)))
+    # Define colors for each FIRST_DNAM using tab10 for better distinction
+    colors = plt.cm.tab10(np.linspace(0, 1, min(len(first_dnam_values), 10)))
+    # If more than 10 categories, cycle through tab10 and then use tab20
+    if len(first_dnam_values) > 10:
+        colors2 = plt.cm.tab20(np.linspace(0, 1, len(first_dnam_values) - 10))
+        colors = np.concatenate([colors, colors2])
     color_map = dict(zip(first_dnam_values, colors))
     
     # Store data for combined plot
@@ -1719,7 +1723,7 @@ def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
             value = row['Crude_Incidence']
             if pd.notna(value):
                 ax.text(
-                    year, value + (avg_df['Crude_Incidence'].max() * 0.05), f"{value:.1f}",
+                    year, value + 2, f"{value:.1f}",
                     fontsize=9, fontweight='bold',
                     ha='center', va='bottom',
                     bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
@@ -1739,7 +1743,7 @@ def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
                 label = f"{pct_change:+.0f}%"
                 
                 ax.text(
-                    x_mid, y_mid + (avg_df['Crude_Incidence'].max() * 0.03), label,
+                    x_mid, y_mid + 2, label,
                     fontsize=8, fontweight='bold',
                     ha='center', va='bottom',
                     bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
@@ -1766,7 +1770,7 @@ def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
                 step = 20
                 
             ax.set_yticks(np.arange(y_min, y_max + step, step))
-            ax.set_ylim(y_min, y_max + step * 1.1)  # Add some padding for annotations
+            ax.set_ylim(y_min, y_max + step)  # Reduced padding since text is closer
         
         # Titles and labels
         main_title = f"Annual Parasite Incidence Trend - {first_dnam} (2021–2024)"
@@ -1854,9 +1858,77 @@ def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
     plt.close()
     print(f"[Saved] {combined_output_path}")
     
-    print(f"\nCreated {len(first_dnam_values)} individual plots and 1 combined plot")
+    # Create subplot version with 4x4 grid
+    n_plots = len([data for data in combined_data.values() if not data['Crude_Incidence'].isna().all()])
+    n_rows = 4
+    n_cols = 4
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 16))
+    fig.suptitle("Annual Parasite Incidence Trend by FIRST_DNAM (2021–2024)", 
+                 fontsize=16, fontweight='bold', y=0.98)
+    
+    # Flatten axes for easier iteration
+    axes_flat = axes.flatten()
+    
+    plot_idx = 0
+    for first_dnam, avg_df in combined_data.items():
+        if avg_df['Crude_Incidence'].isna().all() or plot_idx >= n_rows * n_cols:
+            continue
+            
+        ax = axes_flat[plot_idx]
+        
+        # Plot the data
+        ax.plot(
+            avg_df['Year'],
+            avg_df['Crude_Incidence'],
+            marker='o',
+            color=color_map[first_dnam],
+            linewidth=2,
+            markersize=4,
+            label=first_dnam
+        )
+        
+        # Add trend line if we have enough data points
+        valid_points = avg_df.dropna(subset=['Crude_Incidence'])
+        if len(valid_points) >= 2:
+            fit = np.polyfit(valid_points['Year'], valid_points['Crude_Incidence'], 1)
+            trend_line = np.poly1d(fit)(avg_df['Year'])
+            ax.plot(avg_df['Year'], trend_line, linestyle='--', color='gray', linewidth=1, alpha=0.7)
+        
+        # Format subplot
+        ax.set_title(first_dnam, fontsize=10, fontweight='bold', pad=5)
+        ax.set_xticks([2021, 2022, 2023, 2024])
+        ax.tick_params(axis='x', labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
+        ax.grid(True, alpha=0.3)
+        
+        # Set y-axis limits based on data
+        y_values = avg_df['Crude_Incidence'].dropna()
+        if len(y_values) > 0:
+            y_min = max(0, y_values.min() - y_values.std() * 0.1) if len(y_values) > 1 else max(0, y_values.min() * 0.9)
+            y_max = y_values.max() + y_values.std() * 0.1 if len(y_values) > 1 else y_values.max() * 1.1
+            ax.set_ylim(y_min, y_max)
+        
+        plot_idx += 1
+    
+    # Hide unused subplots
+    for i in range(plot_idx, len(axes_flat)):
+        axes_flat[i].set_visible(False)
+    
+    # Add common labels
+    fig.text(0.5, 0.02, 'Year', ha='center', va='center', fontsize=12, fontweight='bold')
+    fig.text(0.02, 0.5, 'Annual Parasite Incidence', ha='center', va='center', 
+             rotation='vertical', fontsize=12, fontweight='bold')
+    
+    # Save subplot version
+    subplot_output_path = os.path.join(output_dir, 'crude_incidence_trend_subplots_4x4.png')
+    plt.tight_layout(rect=[0.03, 0.03, 1, 0.96])
+    plt.savefig(subplot_output_path, dpi=400, bbox_inches='tight')
+    plt.close()
+    print(f"[Saved] {subplot_output_path}")
+    
+    print(f"\nCreated {len(first_dnam_values)} individual plots, 1 combined plot, and 1 subplot grid")
     print(f"All plots saved in: {output_dir}")
-
 
 
 ### National Adjusted1
