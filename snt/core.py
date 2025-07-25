@@ -466,7 +466,6 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     print(f"- Increasing (pink): {increasing_count} chiefdoms ({increasing_count/total_chiefdoms*100:.1f}%)")
     print(f"- Stable: {stable_count} chiefdoms ({stable_count/total_chiefdoms*100:.1f}%)")
 
-
 def combine_xls(file_path):
     # Combine the files
     files = Path(file_path).glob("*.xls")
