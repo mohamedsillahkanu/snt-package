@@ -91,10 +91,10 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
                 base_gdf = gdf_plot
             
             # Plot filtered base in light gray
-            base_gdf.boundary.plot(ax=ax, color='lightgray', linewidth=0.5, alpha=0.3)
+            base_gdf.boundary.plot(ax=ax, color='black', linewidth=1.0, alpha=0.3)
         else:
             # Plot full base shapefile in light gray
-            gdf.boundary.plot(ax=ax, color='lightgray', linewidth=0.5, alpha=0.3)
+            gdf.boundary.plot(ax=ax, color='black', linewidth=1.0, alpha=0.3)
         
         if len(gdf_plot) > 0:
             # Get valid data for binning
@@ -110,7 +110,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
                         color=colors,
                         ax=ax,
                         legend=False,
-                        edgecolor='gray',
+                        edgecolor='black',
                         linewidth=0.6
                     )
                     
@@ -148,7 +148,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
                         cmap=cmap,
                         norm=norm,
                         legend=False,
-                        edgecolor='gray',
+                        edgecolor='black',
                         linewidth=0.6
                     )
                     
@@ -176,7 +176,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             # Group by FIRST_DNAM and plot boundaries
             for dnam in dnam_boundaries['FIRST_DNAM'].dropna().unique():
                 dnam_geom = dnam_boundaries[dnam_boundaries['FIRST_DNAM'] == dnam]
-                dnam_geom.boundary.plot(ax=ax, color='black', linewidth=2.5, alpha=1.0)
+                dnam_geom.boundary.plot(ax=ax, color='white', linewidth=2.5, alpha=1.0)
         
         # Add names if requested
         if show_names and name_column and len(gdf_plot) > 0:
