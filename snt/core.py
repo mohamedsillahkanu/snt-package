@@ -244,14 +244,32 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         print("Error: No valid percentage change data found")
         return
     
+    # Calculate national-level change (start to end year)
+    # Compute national averages per year
+    averages = df1[year_cols].mean(axis=0)
+    avg_df = averages.reset_index()
+    avg_df.columns = ['Year', 'National_Crude_Incidence']
+    avg_df['Year'] = avg_df['Year'].str.extract(r'(\d{4})').astype(int)
+    avg_df = avg_df.sort_values('Year').reset_index(drop=True)
+    
+    # Compute overall national change (first to last year)
+    y_start = avg_df['National_Crude_Incidence'].iloc[0]
+    y_end = avg_df['National_Crude_Incidence'].iloc[-1]
+    national_overall_change = ((y_end - y_start) / y_start) * 100
+    start_year = avg_df['Year'].iloc[0]
+    end_year = avg_df['Year'].iloc[-1]
+    
     # 1. NATIONAL OVERVIEW MAP with DNAM boundaries and names
     overall_min = gdf_valid['overall_pct_change'].min()
     overall_max = gdf_valid['overall_pct_change'].max()
     total_chiefdoms = len(gdf_valid)
     
+    # Create title with national change
+    national_title = f"National Crude Incidence Change by Chiefdom ({start_year} to {end_year})\nNational Change: {national_overall_change:+.1f}%"
+    
     create_map_with_legend(
         gdf_valid, 
-        f"National Crude Incidence Change by Chiefdom (2021 to 2024)", 
+        national_title, 
         'national_crude_incidence_change_map.png',
         show_dnam_boundaries=True,
         filter_to_data=True,
@@ -269,6 +287,32 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         if len(gdf_dnam) == 0:
             continue
         
+        # Calculate FIRST_DNAM level change (start to end year)
+        dnam_data = df1[df1['FIRST_DNAM'] == first_dnam]
+        if len(dnam_data) > 0:
+            # Compute DNAM averages per year
+            dnam_averages = dnam_data[year_cols].mean(axis=0)
+            dnam_avg_df = dnam_averages.reset_index()
+            dnam_avg_df.columns = ['Year', 'DNAM_Crude_Incidence']
+            dnam_avg_df['Year'] = dnam_avg_df['Year'].str.extract(r'(\d{4})').astype(int)
+            dnam_avg_df = dnam_avg_df.sort_values('Year').reset_index(drop=True)
+            
+            # Compute overall DNAM change (first to last year)
+            if len(dnam_avg_df) >= 2:
+                dnam_y_start = dnam_avg_df['DNAM_Crude_Incidence'].iloc[0]
+                dnam_y_end = dnam_avg_df['DNAM_Crude_Incidence'].iloc[-1]
+                dnam_overall_change = ((dnam_y_end - dnam_y_start) / dnam_y_start) * 100
+                dnam_start_year = dnam_avg_df['Year'].iloc[0]
+                dnam_end_year = dnam_avg_df['Year'].iloc[-1]
+            else:
+                dnam_overall_change = 0
+                dnam_start_year = start_year
+                dnam_end_year = end_year
+        else:
+            dnam_overall_change = 0
+            dnam_start_year = start_year
+            dnam_end_year = end_year
+        
         # Calculate statistics for this DNAM
         min_change_dnam = gdf_dnam['overall_pct_change'].min()
         max_change_dnam = gdf_dnam['overall_pct_change'].max()
@@ -276,9 +320,12 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         
         safe_dnam_name = "".join(c for c in first_dnam if c.isalnum() or c in (' ', '-', '_')).rstrip()
         
+        # Create title with DNAM change
+        dnam_title = f"Crude Incidence Change - {first_dnam} ({dnam_start_year} to {dnam_end_year})\n{first_dnam} Change: {dnam_overall_change:+.1f}%"
+        
         create_map_with_legend(
             gdf_dnam,
-            f"Crude Incidence Change - {first_dnam} (2021 to 2024)",
+            dnam_title,
             f'crude_incidence_change_map_{safe_dnam_name}.png',
             filter_to_data=True,
             show_names=True,
@@ -302,7 +349,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     
     create_map_with_legend(
         gdf_dnam_dissolved,
-        f"Crude Incidence Change by District (2021 to 2024)",
+        f"Crude Incidence Change by District ({start_year} to {end_year})",
         'district_change_overview_map.png',
         filter_to_data=True,
         show_names=True,
@@ -337,7 +384,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         
         create_map_with_legend(
             gdf_dnam_chie,
-            f"Chiefdom-Level Change within {first_dnam} (2021 to 2024)",
+            f"Chiefdom-Level Change within {first_dnam} ({start_year} to {end_year})",
             f'chiefdom_level_change_map_{safe_dnam_name}.png',
             filter_to_data=True,
             show_names=True,
@@ -346,7 +393,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         )
     
     print(f"\n=== COMPREHENSIVE TREND MAPPING COMPLETE ===")
-    print(f"Created maps showing 2021 to 2024 change:")
+    print(f"Created maps showing {start_year} to {end_year} change:")
     print(f"1. National overview map with DNAM boundaries and names (filtered view)")
     print(f"2. {len(first_dnam_values)} individual DNAM maps (filtered to areas of interest)")
     print(f"3. District change overview map with names (filtered view)")
@@ -355,7 +402,8 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     print(f"All maps saved in: {output_dir}")
     print(f"\nNational Summary:")
     print(f"- Total chiefdoms analyzed: {total_chiefdoms}")
-    print(f"- Time period: 2021 to 2024")
+    print(f"- National change ({start_year} to {end_year}): {national_overall_change:+.1f}%")
+    print(f"- Time period: {start_year} to {end_year}")
     
     # Create summary statistics
     decreasing_count = len(gdf_valid[gdf_valid['overall_pct_change'] < 0])
