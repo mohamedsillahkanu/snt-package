@@ -2045,18 +2045,11 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     ax.tick_params(axis='x', labelsize=9)
     ax.tick_params(axis='y', labelsize=9)
 
-    # Y-axis: dynamic min, max, and step
+    # Y-axis: start from 0 with 50-unit intervals
     y_values = avg_df['National_Crude_Incidence']
-    y_min = 0
-    y_max = np.ceil(y_values.max() / 5) * 5
-    y_range = y_max - y_min
-
-    if y_range <= 25:
-        step = 5
-    elif y_range <= 50:
-        step = 10
-    else:
-        step = 20
+    y_min = 0  # Set minimum to 0
+    y_max = np.ceil(y_values.max() / 50) * 50  # Round up to nearest 50
+    step = 50  # Fixed step of 50
 
     ax.set_yticks(np.arange(y_min, y_max + step, step))
     ax.set_ylim(y_min, y_max + step)
@@ -2088,6 +2081,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
     plt.savefig(output_path, dpi=400, bbox_inches='tight')
     plt.close()
     print(f"[Saved] {output_path}")
+
 
 def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
     import os
