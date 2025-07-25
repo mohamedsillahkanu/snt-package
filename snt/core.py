@@ -102,22 +102,22 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             
             if len(valid_data) > 0:
                 if use_simple_colors:
-                    # Simple two-color scheme: Blue for negative, Red for positive
-                    colors = ['blue' if x < 0 else 'red' for x in valid_data['overall_pct_change']]
+                    # Simple two-color scheme: #47B5FF for negative, pink for positive
+                    colors = ['#47B5FF' if x < 0 else 'pink' for x in valid_data['overall_pct_change']]
                     
                     # Plot with simple colors
                     valid_data.plot(
                         color=colors,
                         ax=ax,
                         legend=False,
-                        edgecolor='black',
+                        edgecolor='gray',
                         linewidth=0.6
                     )
                     
                     # Create simple legend
                     legend_elements = [
-                        mpatches.Patch(color='blue', label='Decreasing Incidence'),
-                        mpatches.Patch(color='red', label='Increasing Incidence')
+                        mpatches.Patch(color='#47B5FF', label='Decreasing Incidence'),
+                        mpatches.Patch(color='pink', label='Increasing Incidence')
                     ]
                     
                     # Add legend
@@ -148,7 +148,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
                         cmap=cmap,
                         norm=norm,
                         legend=False,
-                        edgecolor='black',
+                        edgecolor='gray',
                         linewidth=0.6
                     )
                     
@@ -176,7 +176,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             # Group by FIRST_DNAM and plot boundaries
             for dnam in dnam_boundaries['FIRST_DNAM'].dropna().unique():
                 dnam_geom = dnam_boundaries[dnam_boundaries['FIRST_DNAM'] == dnam]
-                dnam_geom.boundary.plot(ax=ax, color='red', linewidth=2, alpha=0.8)
+                dnam_geom.boundary.plot(ax=ax, color='black', linewidth=2.5, alpha=1.0)
         
         # Add names if requested
         if show_names and name_column and len(gdf_plot) > 0:
@@ -302,15 +302,19 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             use_simple_colors=True
         )
     
-    # 3. COMBINED OVERVIEW MAP BY FIRST_DNAM (filtered view)
-    # Calculate average change per DNAM for overview
-    dnam_averages = gdf_valid.groupby('FIRST_DNAM')['overall_pct_change'].agg(['mean', 'count']).reset_index()
+    # 3. COMBINED OVERVIEW MAP BY FIRST_DNAM (dissolved geometry)
+    # Create dissolved dataframe for district-level mapping
+    gdf_dissolved = gdf_valid.copy()
+    # Calculate average change per DNAM
+    dnam_averages = gdf_dissolved.groupby('FIRST_DNAM')['overall_pct_change'].agg(['mean', 'count']).reset_index()
     dnam_averages.columns = ['FIRST_DNAM', 'avg_pct_change', 'chiefdom_count']
     
-    # Merge back to get representative chiefdom for each DNAM (for mapping)
-    gdf_dnam_overview = gdf_valid.groupby('FIRST_DNAM').first().reset_index()
-    gdf_dnam_overview = gdf_dnam_overview.merge(dnam_averages, on='FIRST_DNAM')
-    gdf_dnam_overview['overall_pct_change'] = gdf_dnam_overview['avg_pct_change']
+    # Dissolve geometries by FIRST_DNAM to create district boundaries
+    gdf_dnam_dissolved = gdf_dissolved.dissolve(by='FIRST_DNAM', aggfunc='first').reset_index()
+    
+    # Merge with averages
+    gdf_dnam_dissolved = gdf_dnam_dissolved.merge(dnam_averages, on='FIRST_DNAM')
+    gdf_dnam_dissolved['overall_pct_change'] = gdf_dnam_dissolved['avg_pct_change']
     
     overview_stats = (f"Districts: {len(dnam_averages)}\n"
                      f"Avg District Change: {dnam_averages['avg_pct_change'].mean():+.1f}%\n"
@@ -318,7 +322,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
                      f"Worst District: {dnam_averages['avg_pct_change'].min():+.1f}%")
     
     create_map_with_legend(
-        gdf_dnam_overview,
+        gdf_dnam_dissolved,
         f"Average Crude Incidence Change by District ({first_year} to {last_year})",
         'district_average_change_overview_map.png',
         overview_stats,
@@ -391,6 +395,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     print(f"- Decreasing (blue): {decreasing_count} chiefdoms ({decreasing_count/total_chiefdoms*100:.1f}%)")
     print(f"- Increasing (red): {increasing_count} chiefdoms ({increasing_count/total_chiefdoms*100:.1f}%)")
     print(f"- Stable: {stable_count} chiefdoms ({stable_count/total_chiefdoms*100:.1f}%)")
+
 
 
 
