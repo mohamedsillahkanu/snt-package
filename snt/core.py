@@ -2047,7 +2047,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
 
     # Y-axis: dynamic min, max, and step
     y_values = avg_df['National_Crude_Incidence']
-    y_min = np.floor(y_values.min() / 5) * 5
+    y_min = 0
     y_max = np.ceil(y_values.max() / 5) * 5
     y_range = y_max - y_min
 
