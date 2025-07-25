@@ -75,7 +75,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         return bins
     
     def create_map_with_legend(gdf_plot, title, filename, stats_text=None, show_dnam_boundaries=False, 
-                              filter_to_data=False, show_names=False, name_column=None):
+                              filter_to_data=False, show_names=False, name_column=None, use_simple_colors=False):
         """Helper function to create standardized maps"""
         fig, ax = plt.subplots(1, 1, figsize=(14, 10))
         
@@ -101,43 +101,68 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             valid_data = gdf_plot.dropna(subset=['overall_pct_change'])
             
             if len(valid_data) > 0:
-                # Use fixed bins from -70% to +20%
-                bins = create_fixed_bins()
-                
-                # Create labels for fixed bins with >+20% for the last bin
-                bin_labels = []
-                for i in range(len(bins) - 1):
-                    if i == len(bins) - 2:  # Last bin
-                        bin_labels.append(f"{bins[i]:+.0f}% to >+{bins[i+1]:.0f}%")
-                    else:
-                        bin_labels.append(f"{bins[i]:+.0f}% to {bins[i+1]:+.0f}%")
-                
-                # Use RdBu_r: Red for increases, Blue for decreases
-                cmap = RdBu_r
-                norm = BoundaryNorm(bins, cmap.N)
-                
-                # Plot the data
-                valid_data.plot(
-                    column='overall_pct_change',
-                    ax=ax,
-                    cmap=cmap,
-                    norm=norm,
-                    legend=False,
-                    edgecolor='black',
-                    linewidth=0.6
-                )
-                
-                # Create custom legend with fixed bins
-                legend_elements = []
-                for i, (bin_label, color_val) in enumerate(zip(bin_labels, np.linspace(0, 1, len(bin_labels)))):
-                    color = cmap(color_val)
-                    legend_elements.append(mpatches.Patch(color=color, label=bin_label))
-                
-                # Add legend
-                legend = ax.legend(handles=legend_elements, loc='center left', bbox_to_anchor=(1, 0.5), 
-                                  title='Overall % Change\n(Red=Increase, Blue=Decrease)', 
-                                  title_fontsize=12, fontsize=10)
-                legend.get_title().set_fontweight('bold')
+                if use_simple_colors:
+                    # Simple two-color scheme: Blue for negative, Red for positive
+                    colors = ['blue' if x < 0 else 'red' for x in valid_data['overall_pct_change']]
+                    
+                    # Plot with simple colors
+                    valid_data.plot(
+                        color=colors,
+                        ax=ax,
+                        legend=False,
+                        edgecolor='black',
+                        linewidth=0.6
+                    )
+                    
+                    # Create simple legend
+                    legend_elements = [
+                        mpatches.Patch(color='blue', label='Decreasing Incidence'),
+                        mpatches.Patch(color='red', label='Increasing Incidence')
+                    ]
+                    
+                    # Add legend
+                    legend = ax.legend(handles=legend_elements, loc='center left', bbox_to_anchor=(1, 0.5), 
+                                      title='Trend Direction', 
+                                      title_fontsize=12, fontsize=10)
+                    legend.get_title().set_fontweight('bold')
+                else:
+                    # Use fixed bins from -70% to +20%
+                    bins = create_fixed_bins()
+                    
+                    # Create labels for fixed bins with >+20% for the last bin
+                    bin_labels = []
+                    for i in range(len(bins) - 1):
+                        if i == len(bins) - 2:  # Last bin
+                            bin_labels.append(f"{bins[i]:+.0f}% to >+{bins[i+1]:.0f}%")
+                        else:
+                            bin_labels.append(f"{bins[i]:+.0f}% to {bins[i+1]:+.0f}%")
+                    
+                    # Use RdBu_r: Red for increases, Blue for decreases
+                    cmap = RdBu_r
+                    norm = BoundaryNorm(bins, cmap.N)
+                    
+                    # Plot the data
+                    valid_data.plot(
+                        column='overall_pct_change',
+                        ax=ax,
+                        cmap=cmap,
+                        norm=norm,
+                        legend=False,
+                        edgecolor='black',
+                        linewidth=0.6
+                    )
+                    
+                    # Create custom legend with fixed bins
+                    legend_elements = []
+                    for i, (bin_label, color_val) in enumerate(zip(bin_labels, np.linspace(0, 1, len(bin_labels)))):
+                        color = cmap(color_val)
+                        legend_elements.append(mpatches.Patch(color=color, label=bin_label))
+                    
+                    # Add legend
+                    legend = ax.legend(handles=legend_elements, loc='center left', bbox_to_anchor=(1, 0.5), 
+                                      title='Overall % Change\n(Red=Increase, Blue=Decrease)', 
+                                      title_fontsize=12, fontsize=10)
+                    legend.get_title().set_fontweight('bold')
         
         # Add FIRST_DNAM boundaries if requested
         if show_dnam_boundaries:
@@ -155,17 +180,47 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         
         # Add names if requested
         if show_names and name_column and len(gdf_plot) > 0:
-            valid_data_names = gdf_plot.dropna(subset=[name_column])
-            
-            for idx, row in valid_data_names.iterrows():
-                if hasattr(row.geometry, 'centroid'):
-                    centroid = row.geometry.centroid
-                    ax.annotate(row[name_column], 
-                               xy=(centroid.x, centroid.y),
-                               xytext=(3, 3), textcoords="offset points",
-                               fontsize=8, fontweight='bold',
-                               bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.7),
-                               ha='left')
+            if name_column == 'FIRST_DNAM':
+                # For FIRST_DNAM, show names only once at district center
+                dnam_groups = gdf_plot.groupby('FIRST_DNAM')
+                for dnam_name, group in dnam_groups:
+                    # Calculate the centroid of all chiefdoms in this DNAM
+                    union_geom = group.geometry.unary_union
+                    if hasattr(union_geom, 'centroid'):
+                        centroid = union_geom.centroid
+                        ax.annotate(dnam_name, 
+                                   xy=(centroid.x, centroid.y),
+                                   xytext=(3, 3), textcoords="offset points",
+                                   fontsize=10, fontweight='bold',
+                                   bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8),
+                                   ha='center')
+            elif name_column == 'FIRST_CHIE':
+                # For FIRST_CHIE, show names with percentage change in brackets
+                valid_data_names = gdf_plot.dropna(subset=[name_column, 'overall_pct_change'])
+                
+                for idx, row in valid_data_names.iterrows():
+                    if hasattr(row.geometry, 'centroid'):
+                        centroid = row.geometry.centroid
+                        change_text = f"{row[name_column]} ({row['overall_pct_change']:+.1f}%)"
+                        ax.annotate(change_text, 
+                                   xy=(centroid.x, centroid.y),
+                                   xytext=(3, 3), textcoords="offset points",
+                                   fontsize=8, fontweight='bold',
+                                   bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.7),
+                                   ha='left')
+            else:
+                # Default behavior for other name columns
+                valid_data_names = gdf_plot.dropna(subset=[name_column])
+                
+                for idx, row in valid_data_names.iterrows():
+                    if hasattr(row.geometry, 'centroid'):
+                        centroid = row.geometry.centroid
+                        ax.annotate(row[name_column], 
+                                   xy=(centroid.x, centroid.y),
+                                   xytext=(3, 3), textcoords="offset points",
+                                   fontsize=8, fontweight='bold',
+                                   bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.7),
+                                   ha='left')
         
         # Add title
         ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
@@ -211,7 +266,8 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         show_dnam_boundaries=True,
         filter_to_data=True,
         show_names=True,
-        name_column='FIRST_DNAM'
+        name_column='FIRST_DNAM',
+        use_simple_colors=True
     )
     
     # 2. INDIVIDUAL MAPS FOR EACH FIRST_DNAM (filtered to show only areas of interest)
@@ -240,7 +296,10 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             f"Crude Incidence Change - {first_dnam} ({first_year} to {last_year})",
             f'crude_incidence_change_map_{safe_dnam_name}.png',
             dnam_stats,
-            filter_to_data=True
+            filter_to_data=True,
+            show_names=True,
+            name_column='FIRST_CHIE',
+            use_simple_colors=True
         )
     
     # 3. COMBINED OVERVIEW MAP BY FIRST_DNAM (filtered view)
@@ -265,7 +324,8 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         overview_stats,
         filter_to_data=True,
         show_names=True,
-        name_column='FIRST_DNAM'
+        name_column='FIRST_DNAM',
+        use_simple_colors=True
     )
     
     # 4. MAPS FOR EACH FIRST_DNAM SHOWING FIRST_CHIE (filtered and enhanced)
@@ -305,7 +365,8 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             stats_summary,
             filter_to_data=True,
             show_names=True,
-            name_column='FIRST_CHIE'
+            name_column='FIRST_CHIE',
+            use_simple_colors=True
         )
     
     print(f"\n=== COMPREHENSIVE TREND MAPPING COMPLETE ===")
@@ -330,6 +391,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     print(f"- Decreasing (blue): {decreasing_count} chiefdoms ({decreasing_count/total_chiefdoms*100:.1f}%)")
     print(f"- Increasing (red): {increasing_count} chiefdoms ({increasing_count/total_chiefdoms*100:.1f}%)")
     print(f"- Stable: {stable_count} chiefdoms ({stable_count/total_chiefdoms*100:.1f}%)")
+
 
 
 
