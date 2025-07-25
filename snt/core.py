@@ -9,6 +9,7 @@ import pandas as pd
 from tabulate import tabulate
 import math
 
+#
 def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     import os
     import matplotlib.pyplot as plt
@@ -16,10 +17,9 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     import numpy as np
     import geopandas as gpd
     import re
-    from matplotlib.colors import Normalize
+    from matplotlib.colors import BoundaryNorm
     from matplotlib.cm import RdBu_r
     import matplotlib.patches as mpatches
-    from matplotlib.colorbar import ColorbarBase
     
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -37,38 +37,152 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         print("Error: Need at least 2 years of data to calculate percentage change")
         return
     
-    # Calculate overall percentage change for each chiefdom (ORIGINAL METHOD - AVERAGE)
+    # Calculate overall percentage change for each chiefdom
     def calculate_overall_change(row):
-        # Compute averages per year
-        averages = []
+        values = []
         years = []
         for col in year_cols:
             if pd.notna(row[col]):
                 year = int(re.search(r'(\d{4})', col).group(1))
-                averages.append(row[col])
+                values.append(row[col])
                 years.append(year)
         
-        if len(averages) >= 2:
-            # Use the original method - first and last year averages
-            sorted_data = sorted(zip(years, averages))
-            first_avg = sorted_data[0][1]
-            last_avg = sorted_data[-1][1]
+        if len(values) >= 2:
+            sorted_data = sorted(zip(years, values))
+            first_value = sorted_data[0][1]
+            last_value = sorted_data[-1][1]
             first_year = sorted_data[0][0]
             last_year = sorted_data[-1][0]
             
-            if first_avg > 0:
-                pct_change = ((last_avg - first_avg) / first_avg) * 100
-                return pct_change, first_year, last_year, first_avg, last_avg
+            if first_value > 0:
+                pct_change = ((last_value - first_value) / first_value) * 100
+                return pct_change, first_year, last_year, first_value, last_value
         
         return np.nan, np.nan, np.nan, np.nan, np.nan
     
-    # Calculate percentage changes using ORIGINAL AVERAGE METHOD
-    df1[['overall_pct_change', 'first_year', 'last_year', 'first_avg', 'last_avg']] = df1.apply(
+    # Calculate percentage changes
+    df1[['overall_pct_change', 'first_year', 'last_year', 'first_value', 'last_value']] = df1.apply(
         lambda row: pd.Series(calculate_overall_change(row)), axis=1
     )
     
     # Merge with shapefile
     gdf = shapefile.merge(df1, on=['FIRST_DNAM', 'FIRST_CHIE'], how='left', validate='1:1')
+    
+    # Fixed bins for percentage change (-70% to >+20%, 10 bins)
+    def create_fixed_bins():
+        # Fixed range from -70% to +20% with 10 equal bins
+        bins = np.linspace(-70, 20, 11)  # 11 values create 10 bins
+        return bins
+    
+    def create_map_with_legend(gdf_plot, title, filename, stats_text=None, show_dnam_boundaries=False, 
+                              filter_to_data=False, show_names=False, name_column=None):
+        """Helper function to create standardized maps"""
+        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
+        
+        # Determine what to show as base
+        if filter_to_data and len(gdf_plot) > 0:
+            # Only show areas of interest - filter base map to regions with data
+            if show_dnam_boundaries:
+                # Get unique FIRST_DNAM values from the data
+                dnam_values = gdf_plot['FIRST_DNAM'].dropna().unique()
+                base_gdf = gdf[gdf['FIRST_DNAM'].isin(dnam_values)]
+            else:
+                # Just show the areas with data
+                base_gdf = gdf_plot
+            
+            # Plot filtered base in light gray
+            base_gdf.boundary.plot(ax=ax, color='lightgray', linewidth=0.5, alpha=0.3)
+        else:
+            # Plot full base shapefile in light gray
+            gdf.boundary.plot(ax=ax, color='lightgray', linewidth=0.5, alpha=0.3)
+        
+        if len(gdf_plot) > 0:
+            # Get valid data for binning
+            valid_data = gdf_plot.dropna(subset=['overall_pct_change'])
+            
+            if len(valid_data) > 0:
+                # Use fixed bins from -70% to +20%
+                bins = create_fixed_bins()
+                
+                # Create labels for fixed bins with >+20% for the last bin
+                bin_labels = []
+                for i in range(len(bins) - 1):
+                    if i == len(bins) - 2:  # Last bin
+                        bin_labels.append(f"{bins[i]:+.0f}% to >+{bins[i+1]:.0f}%")
+                    else:
+                        bin_labels.append(f"{bins[i]:+.0f}% to {bins[i+1]:+.0f}%")
+                
+                # Use RdBu_r: Red for increases, Blue for decreases
+                cmap = RdBu_r
+                norm = BoundaryNorm(bins, cmap.N)
+                
+                # Plot the data
+                valid_data.plot(
+                    column='overall_pct_change',
+                    ax=ax,
+                    cmap=cmap,
+                    norm=norm,
+                    legend=False,
+                    edgecolor='black',
+                    linewidth=0.6
+                )
+                
+                # Create custom legend with fixed bins
+                legend_elements = []
+                for i, (bin_label, color_val) in enumerate(zip(bin_labels, np.linspace(0, 1, len(bin_labels)))):
+                    color = cmap(color_val)
+                    legend_elements.append(mpatches.Patch(color=color, label=bin_label))
+                
+                # Add legend
+                legend = ax.legend(handles=legend_elements, loc='center left', bbox_to_anchor=(1, 0.5), 
+                                  title='Overall % Change\n(Red=Increase, Blue=Decrease)', 
+                                  title_fontsize=12, fontsize=10)
+                legend.get_title().set_fontweight('bold')
+        
+        # Add FIRST_DNAM boundaries if requested
+        if show_dnam_boundaries:
+            if filter_to_data and len(gdf_plot) > 0:
+                # Only show boundaries for areas with data
+                dnam_values = gdf_plot['FIRST_DNAM'].dropna().unique()
+                dnam_boundaries = gdf[gdf['FIRST_DNAM'].isin(dnam_values)]
+            else:
+                dnam_boundaries = gdf
+            
+            # Group by FIRST_DNAM and plot boundaries
+            for dnam in dnam_boundaries['FIRST_DNAM'].dropna().unique():
+                dnam_geom = dnam_boundaries[dnam_boundaries['FIRST_DNAM'] == dnam]
+                dnam_geom.boundary.plot(ax=ax, color='red', linewidth=2, alpha=0.8)
+        
+        # Add names if requested
+        if show_names and name_column and len(gdf_plot) > 0:
+            valid_data_names = gdf_plot.dropna(subset=[name_column])
+            
+            for idx, row in valid_data_names.iterrows():
+                if hasattr(row.geometry, 'centroid'):
+                    centroid = row.geometry.centroid
+                    ax.annotate(row[name_column], 
+                               xy=(centroid.x, centroid.y),
+                               xytext=(3, 3), textcoords="offset points",
+                               fontsize=8, fontweight='bold',
+                               bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.7),
+                               ha='left')
+        
+        # Add title
+        ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
+        ax.set_axis_off()
+        
+        # Add statistics if provided
+        if stats_text:
+            ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, fontsize=11,
+                    verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        
+        # Save map
+        map_path = os.path.join(output_dir, filename)
+        plt.tight_layout()
+        plt.savefig(map_path, dpi=400, bbox_inches='tight')
+        plt.close()
+        print(f"[Saved] {map_path}")
+        return map_path
     
     # Remove rows with no percentage change data
     gdf_valid = gdf.dropna(subset=['overall_pct_change']).copy()
@@ -77,99 +191,30 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         print("Error: No valid percentage change data found")
         return
     
-    # Fixed continuous scale from -70% to +20%
-    vmin = -70
-    vmax = 20
-    norm = Normalize(vmin=vmin, vmax=vmax)
-    cmap = RdBu_r
-    
-    def create_standalone_national_map(gdf_plot, gdf_boundaries, title, filename, stats_text=None):
-        """Create a clean, standalone national map that stands out"""
-        fig, ax = plt.subplots(1, 1, figsize=(16, 12))
-        
-        if len(gdf_plot) > 0:
-            # Get valid data
-            valid_data = gdf_plot.dropna(subset=['overall_pct_change'])
-            
-            if len(valid_data) > 0:
-                # Plot the chiefdoms with continuous scale - no background clutter
-                valid_data.plot(
-                    column='overall_pct_change',
-                    ax=ax,
-                    cmap=cmap,
-                    norm=norm,
-                    legend=False,
-                    edgecolor='white',  # White edges for clean separation
-                    linewidth=0.5
-                )
-                
-                # Add FIRST_DNAM boundaries prominently
-                if gdf_boundaries is not None:
-                    gdf_boundaries.boundary.plot(ax=ax, color='black', linewidth=2, alpha=0.8)
-                
-                # Add continuous colorbar with better positioning
-                sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-                sm.set_array([])
-                cbar = plt.colorbar(sm, ax=ax, shrink=0.6, aspect=20, pad=0.05, 
-                                   orientation='vertical')
-                cbar.set_label('Overall % Change\n(Red=Increase, Blue=Decrease)', 
-                              fontsize=14, fontweight='bold')
-                cbar.ax.tick_params(labelsize=12)
-                
-                # Add major tick marks every 10%
-                cbar.set_ticks(np.arange(-70, 21, 10))
-        
-        # Add title with better spacing
-        ax.set_title(title, fontsize=18, fontweight='bold', pad=30)
-        ax.set_axis_off()
-        
-        # Add statistics in a more prominent box
-        if stats_text:
-            ax.text(0.02, 0.02, stats_text, transform=ax.transAxes, fontsize=12,
-                    verticalalignment='bottom', 
-                    bbox=dict(boxstyle='round,pad=0.5', facecolor='white', 
-                             edgecolor='black', alpha=0.9))
-        
-        # Save map with higher quality
-        map_path = os.path.join(output_dir, filename)
-        plt.tight_layout()
-        plt.savefig(map_path, dpi=400, bbox_inches='tight', facecolor='white')
-        plt.close()
-        print(f"[Saved] {map_path}")
-        return map_path
-    
-    # Create FIRST_DNAM boundaries for overlay
-    gdf_dnam_boundaries = gdf.dissolve(by='FIRST_DNAM').reset_index()
-    
-    # Find actual minimum and maximum changes across all FIRST_CHIE (using averages)
-    national_avg = gdf_valid['overall_pct_change'].mean()
-    actual_min = gdf_valid['overall_pct_change'].min()
-    actual_max = gdf_valid['overall_pct_change'].max()
+    # 1. NATIONAL OVERVIEW MAP with DNAM boundaries and names
+    overall_avg = gdf_valid['overall_pct_change'].mean()
+    overall_min = gdf_valid['overall_pct_change'].min()
+    overall_max = gdf_valid['overall_pct_change'].max()
     total_chiefdoms = len(gdf_valid)
     first_year = int(gdf_valid['first_year'].mode().iloc[0])
     last_year = int(gdf_valid['last_year'].mode().iloc[0])
     
-    # Find chiefdoms with min and max changes
-    min_chiefdom = gdf_valid[gdf_valid['overall_pct_change'] == actual_min][['FIRST_DNAM', 'FIRST_CHIE']].iloc[0]
-    max_chiefdom = gdf_valid[gdf_valid['overall_pct_change'] == actual_max][['FIRST_DNAM', 'FIRST_CHIE']].iloc[0]
-    
-    # 1. STANDALONE NATIONAL MAP - ALL FIRST_CHIE WITH CLEAN DESIGN
     national_stats = (f"Total Chiefdoms: {total_chiefdoms}\n"
-                     f"National Average: {national_avg:+.1f}%\n"
-                     f"Minimum Change: {actual_min:+.1f}%\n"
-                     f"  ({min_chiefdom['FIRST_CHIE']}, {min_chiefdom['FIRST_DNAM']})\n"
-                     f"Maximum Change: {actual_max:+.1f}%\n"
-                     f"  ({max_chiefdom['FIRST_CHIE']}, {max_chiefdom['FIRST_DNAM']})")
+                     f"National Average: {overall_avg:+.1f}%\n"
+                     f"Range: {overall_min:+.1f}% to {overall_max:+.1f}%")
     
-    create_standalone_national_map(
+    create_map_with_legend(
         gdf_valid, 
-        gdf_dnam_boundaries,
-        f"Sierra Leone: Crude Incidence Change by Chiefdom ({first_year}-{last_year})", 
-        'sierra_leone_national_crude_incidence_change_map.png',
-        national_stats
+        f"National Crude Incidence Change by Chiefdom ({first_year} to {last_year})", 
+        'national_crude_incidence_change_map.png',
+        national_stats,
+        show_dnam_boundaries=True,
+        filter_to_data=True,
+        show_names=True,
+        name_column='FIRST_DNAM'
     )
     
-    # 2. INDIVIDUAL MAPS FOR EACH FIRST_DNAM
+    # 2. INDIVIDUAL MAPS FOR EACH FIRST_DNAM (filtered to show only areas of interest)
     first_dnam_values = gdf_valid['FIRST_DNAM'].dropna().unique()
     
     for first_dnam in first_dnam_values:
@@ -178,100 +223,102 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         if len(gdf_dnam) == 0:
             continue
         
-        # Find actual min and max for this DNAM
-        dnam_min = gdf_dnam['overall_pct_change'].min()
-        dnam_max = gdf_dnam['overall_pct_change'].max()
+        # Calculate statistics for this DNAM
+        avg_change = gdf_dnam['overall_pct_change'].mean()
+        min_change_dnam = gdf_dnam['overall_pct_change'].min()
+        max_change_dnam = gdf_dnam['overall_pct_change'].max()
         n_chiefdoms = len(gdf_dnam)
         
-        # Find chiefdoms with min and max changes in this DNAM
-        min_chie_dnam = gdf_dnam[gdf_dnam['overall_pct_change'] == dnam_min]['FIRST_CHIE'].iloc[0]
-        max_chie_dnam = gdf_dnam[gdf_dnam['overall_pct_change'] == dnam_max]['FIRST_CHIE'].iloc[0]
-        
         dnam_stats = (f"Chiefdoms: {n_chiefdoms}\n"
-                     f"Minimum: {dnam_min:+.1f}% ({min_chie_dnam})\n"
-                     f"Maximum: {dnam_max:+.1f}% ({max_chie_dnam})")
+                     f"Average: {avg_change:+.1f}%\n"
+                     f"Range: {min_change_dnam:+.1f}% to {max_change_dnam:+.1f}%")
         
         safe_dnam_name = "".join(c for c in first_dnam if c.isalnum() or c in (' ', '-', '_')).rstrip()
         
-        create_map_with_continuous_legend(
+        create_map_with_legend(
             gdf_dnam,
-            None,  # No boundaries for individual DNAM maps
             f"Crude Incidence Change - {first_dnam} ({first_year} to {last_year})",
             f'crude_incidence_change_map_{safe_dnam_name}.png',
             dnam_stats,
-            show_boundaries=False
+            filter_to_data=True
         )
     
-    # 3. DISTRICT OVERVIEW MAP (showing min/max per district, not average)
-    # Calculate min and max per DNAM
-    dnam_stats = gdf_valid.groupby('FIRST_DNAM')['overall_pct_change'].agg(['min', 'max', 'count']).reset_index()
-    dnam_stats.columns = ['FIRST_DNAM', 'min_change', 'max_change', 'chiefdom_count']
+    # 3. COMBINED OVERVIEW MAP BY FIRST_DNAM (filtered view)
+    # Calculate average change per DNAM for overview
+    dnam_averages = gdf_valid.groupby('FIRST_DNAM')['overall_pct_change'].agg(['mean', 'count']).reset_index()
+    dnam_averages.columns = ['FIRST_DNAM', 'avg_pct_change', 'chiefdom_count']
     
-    # Create a map showing the range (max - min) per district
-    dnam_stats['change_range'] = dnam_stats['max_change'] - dnam_stats['min_change']
+    # Merge back to get representative chiefdom for each DNAM (for mapping)
+    gdf_dnam_overview = gdf_valid.groupby('FIRST_DNAM').first().reset_index()
+    gdf_dnam_overview = gdf_dnam_overview.merge(dnam_averages, on='FIRST_DNAM')
+    gdf_dnam_overview['overall_pct_change'] = gdf_dnam_overview['avg_pct_change']
     
-    # Merge with boundaries for visualization
-    gdf_dnam_range = gdf_dnam_boundaries.merge(dnam_stats, on='FIRST_DNAM')
+    overview_stats = (f"Districts: {len(dnam_averages)}\n"
+                     f"Avg District Change: {dnam_averages['avg_pct_change'].mean():+.1f}%\n"
+                     f"Best District: {dnam_averages['avg_pct_change'].max():+.1f}%\n"
+                     f"Worst District: {dnam_averages['avg_pct_change'].min():+.1f}%")
     
-    # Create range statistics
-    range_stats = (f"Districts: {len(dnam_stats)}\n"
-                  f"Largest Range: {dnam_stats['change_range'].max():.1f}%\n"
-                  f"Smallest Range: {dnam_stats['change_range'].min():.1f}%\n"
-                  f"Avg Range: {dnam_stats['change_range'].mean():.1f}%")
-    
-    # Create a special map for district ranges
-    fig, ax = plt.subplots(1, 1, figsize=(14, 10))
-    
-    # Plot base
-    gdf.boundary.plot(ax=ax, color='lightgray', linewidth=0.3, alpha=0.2)
-    
-    # Plot district ranges
-    gdf_dnam_range.plot(
-        column='change_range',
-        ax=ax,
-        cmap='Oranges',
-        legend=False,
-        edgecolor='black',
-        linewidth=1
+    create_map_with_legend(
+        gdf_dnam_overview,
+        f"Average Crude Incidence Change by District ({first_year} to {last_year})",
+        'district_average_change_overview_map.png',
+        overview_stats,
+        filter_to_data=True,
+        show_names=True,
+        name_column='FIRST_DNAM'
     )
     
-    # Add colorbar for range
-    sm_range = plt.cm.ScalarMappable(cmap='Oranges', 
-                                    norm=Normalize(vmin=dnam_stats['change_range'].min(), 
-                                                  vmax=dnam_stats['change_range'].max()))
-    sm_range.set_array([])
-    cbar_range = plt.colorbar(sm_range, ax=ax, shrink=0.8, aspect=30, pad=0.02)
-    cbar_range.set_label('Change Range (Max - Min) %', fontsize=12, fontweight='bold')
-    cbar_range.ax.tick_params(labelsize=10)
+    # 4. MAPS FOR EACH FIRST_DNAM SHOWING FIRST_CHIE (filtered and enhanced)
+    for first_dnam in first_dnam_values:
+        dnam_df = df1[df1['FIRST_DNAM'] == first_dnam]
+        
+        if len(dnam_df) == 0:
+            continue
+        
+        # Get unique FIRST_CHIE values for this FIRST_DNAM
+        first_chie_values = dnam_df['FIRST_CHIE'].dropna().unique()
+        
+        if len(first_chie_values) == 0:
+            continue
+        
+        # Filter geodataframe for this DNAM
+        gdf_dnam_chie = gdf_valid[gdf_valid['FIRST_DNAM'] == first_dnam].copy()
+        
+        if len(gdf_dnam_chie) == 0:
+            continue
+        
+        # Calculate statistics for CHIE within this DNAM
+        chie_stats = gdf_dnam_chie.groupby('FIRST_CHIE')['overall_pct_change'].agg(['mean', 'count']).reset_index()
+        chie_stats.columns = ['FIRST_CHIE', 'avg_change', 'count']
+        
+        stats_summary = (f"Chiefdoms in {first_dnam}: {len(gdf_dnam_chie)}\n"
+                        f"Administrative Units: {len(chie_stats)}\n"
+                        f"Avg Change: {gdf_dnam_chie['overall_pct_change'].mean():+.1f}%\n"
+                        f"Range: {gdf_dnam_chie['overall_pct_change'].min():+.1f}% to {gdf_dnam_chie['overall_pct_change'].max():+.1f}%")
+        
+        safe_dnam_name = "".join(c for c in first_dnam if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        
+        create_map_with_legend(
+            gdf_dnam_chie,
+            f"Chiefdom-Level Change within {first_dnam} ({first_year} to {last_year})",
+            f'chiefdom_level_change_map_{safe_dnam_name}.png',
+            stats_summary,
+            filter_to_data=True,
+            show_names=True,
+            name_column='FIRST_CHIE'
+        )
     
-    ax.set_title(f"District Variation in Crude Incidence Change ({first_year} to {last_year})", 
-                 fontsize=16, fontweight='bold', pad=20)
-    ax.set_axis_off()
-    
-    # Add statistics
-    ax.text(0.02, 0.98, range_stats, transform=ax.transAxes, fontsize=11,
-            verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-    
-    range_map_path = os.path.join(output_dir, 'district_change_range_map.png')
-    plt.tight_layout()
-    plt.savefig(range_map_path, dpi=400, bbox_inches='tight')
-    plt.close()
-    print(f"[Saved] {range_map_path}")
-    
-    print(f"\n=== STANDALONE NATIONAL MAP CREATED ===")
-    print(f"Created clean, standalone national map with:")
-    print(f"- All FIRST_CHIE chiefdoms with continuous color scale")
-    print(f"- FIRST_DNAM boundaries for administrative context") 
-    print(f"- Original average calculation method used")
-    print(f"- Clean design that stands out")
+    print(f"\n=== COMPREHENSIVE TREND MAPPING COMPLETE ===")
+    print(f"Created maps equivalent to all trend analyses:")
+    print(f"1. National overview map with DNAM boundaries and names (filtered view)")
+    print(f"2. {len(first_dnam_values)} individual DNAM maps (filtered to areas of interest)")
+    print(f"3. District average overview map with names (filtered view)")
+    print(f"4. {len(first_dnam_values)} DNAM chiefdom-level maps with CHIE names (filtered views)")
     print(f"\nColor scheme: RED = Increasing incidence, BLUE = Decreasing incidence")
-    print(f"Scale: -70% to +20%")
-    print(f"Map saved in: {output_dir}")
+    print(f"All maps saved in: {output_dir}")
     print(f"\nNational Summary:")
     print(f"- Total chiefdoms analyzed: {total_chiefdoms}")
-    print(f"- National average change: {national_avg:+.1f}%")
-    print(f"- Minimum change: {actual_min:+.1f}% ({min_chiefdom['FIRST_CHIE']}, {min_chiefdom['FIRST_DNAM']})")
-    print(f"- Maximum change: {actual_max:+.1f}% ({max_chiefdom['FIRST_CHIE']}, {max_chiefdom['FIRST_DNAM']})")
+    print(f"- National average change: {overall_avg:+.1f}%")
     print(f"- Time period: {first_year} to {last_year}")
     
     # Create summary statistics
@@ -283,6 +330,8 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     print(f"- Decreasing (blue): {decreasing_count} chiefdoms ({decreasing_count/total_chiefdoms*100:.1f}%)")
     print(f"- Increasing (red): {increasing_count} chiefdoms ({increasing_count/total_chiefdoms*100:.1f}%)")
     print(f"- Stable: {stable_count} chiefdoms ({stable_count/total_chiefdoms*100:.1f}%)")
+
+
 
 def combine_xls(file_path):
     # Combine the files
