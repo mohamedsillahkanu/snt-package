@@ -2013,7 +2013,7 @@ def plot_national_crude_trend(output_path='national_crude_incidence_trend.png'):
         value = row['National_Crude_Incidence']
         if pd.notna(value):
             ax.text(
-                year, value + 2, f"{value:.1f}",
+                year, value + 2, f"{value:.0f}",
                 fontsize=9, fontweight='bold',
                 ha='center', va='bottom',
                 bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3')
