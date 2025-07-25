@@ -86,7 +86,7 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
                 # Just show the areas with data
                 base_gdf = gdf_plot
             
-            # Plot filtered base in light gray
+            # Plot filtered base boundaries in light gray (this shows FIRST_CHIE boundaries)
             base_gdf.boundary.plot(ax=ax, color='lightgray', linewidth=0.5, alpha=0.3)
         else:
             # Plot full base shapefile in light gray
@@ -165,14 +165,16 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             if filter_to_data and len(gdf_plot) > 0:
                 # Only show boundaries for areas with data
                 dnam_values = gdf_plot['FIRST_DNAM'].dropna().unique()
-                dnam_boundaries = gdf[gdf['FIRST_DNAM'].isin(dnam_values)]
+                dnam_boundaries_data = gdf[gdf['FIRST_DNAM'].isin(dnam_values)]
             else:
-                dnam_boundaries = gdf
+                dnam_boundaries_data = gdf
             
-            # Group by FIRST_DNAM and plot boundaries
-            for dnam in dnam_boundaries['FIRST_DNAM'].dropna().unique():
-                dnam_geom = dnam_boundaries[dnam_boundaries['FIRST_DNAM'] == dnam]
-                dnam_geom.boundary.plot(ax=ax, color='black', linewidth=2.5, alpha=1.0)
+            # Group by FIRST_DNAM and plot thick black boundaries
+            for dnam in dnam_boundaries_data['FIRST_DNAM'].dropna().unique():
+                dnam_geom = dnam_boundaries_data[dnam_boundaries_data['FIRST_DNAM'] == dnam]
+                # Dissolve chiefdoms within each DNAM to get district boundary
+                dnam_dissolved = dnam_geom.dissolve(by='FIRST_DNAM')
+                dnam_dissolved.boundary.plot(ax=ax, color='black', linewidth=2.5, alpha=1.0)
         
         # Add names if requested
         if show_names and name_column and len(gdf_plot) > 0:
@@ -243,22 +245,14 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         return
     
     # 1. NATIONAL OVERVIEW MAP with DNAM boundaries and names
-    overall_avg = gdf_valid['overall_pct_change'].mean()
     overall_min = gdf_valid['overall_pct_change'].min()
     overall_max = gdf_valid['overall_pct_change'].max()
     total_chiefdoms = len(gdf_valid)
-    first_year = int(gdf_valid['first_year'].mode().iloc[0])
-    last_year = int(gdf_valid['last_year'].mode().iloc[0])
-    
-    national_stats = (f"Total Chiefdoms: {total_chiefdoms}\n"
-                     f"National Average: {overall_avg:+.1f}%\n"
-                     f"Range: {overall_min:+.1f}% to {overall_max:+.1f}%")
     
     create_map_with_legend(
         gdf_valid, 
         f"National Crude Incidence Change by Chiefdom (2021 to 2024)", 
         'national_crude_incidence_change_map.png',
-        national_stats,
         show_dnam_boundaries=True,
         filter_to_data=True,
         show_names=True,
@@ -276,14 +270,9 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             continue
         
         # Calculate statistics for this DNAM
-        avg_change = gdf_dnam['overall_pct_change'].mean()
         min_change_dnam = gdf_dnam['overall_pct_change'].min()
         max_change_dnam = gdf_dnam['overall_pct_change'].max()
         n_chiefdoms = len(gdf_dnam)
-        
-        dnam_stats = (f"Chiefdoms: {n_chiefdoms}\n"
-                     f"Average: {avg_change:+.1f}%\n"
-                     f"Range: {min_change_dnam:+.1f}% to {max_change_dnam:+.1f}%")
         
         safe_dnam_name = "".join(c for c in first_dnam if c.isalnum() or c in (' ', '-', '_')).rstrip()
         
@@ -291,7 +280,6 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             gdf_dnam,
             f"Crude Incidence Change - {first_dnam} (2021 to 2024)",
             f'crude_incidence_change_map_{safe_dnam_name}.png',
-            dnam_stats,
             filter_to_data=True,
             show_names=True,
             name_column='FIRST_CHIE',
@@ -301,9 +289,9 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     # 3. COMBINED OVERVIEW MAP BY FIRST_DNAM (dissolved geometry)
     # Create dissolved dataframe for district-level mapping
     gdf_dissolved = gdf_valid.copy()
-    # Calculate change per DNAM (2021 to 2024)
-    dnam_change = gdf_dissolved.groupby('FIRST_DNAM')['overall_pct_change'].agg(['mean', 'count']).reset_index()
-    dnam_change.columns = ['FIRST_DNAM', 'change_2021_2024', 'chiefdom_count']
+    # Get change per DNAM (2021 to 2024) - no mean calculation
+    dnam_change = gdf_dissolved.groupby('FIRST_DNAM')['overall_pct_change'].first().reset_index()
+    dnam_change.columns = ['FIRST_DNAM', 'change_2021_2024']
     
     # Dissolve geometries by FIRST_DNAM to create district boundaries
     gdf_dnam_dissolved = gdf_dissolved.dissolve(by='FIRST_DNAM', aggfunc='first').reset_index()
@@ -312,16 +300,10 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     gdf_dnam_dissolved = gdf_dnam_dissolved.merge(dnam_change, on='FIRST_DNAM')
     gdf_dnam_dissolved['overall_pct_change'] = gdf_dnam_dissolved['change_2021_2024']
     
-    overview_stats = (f"Districts: {len(dnam_change)}\n"
-                     f"Mean District Change: {dnam_change['change_2021_2024'].mean():+.1f}%\n"
-                     f"Best District: {dnam_change['change_2021_2024'].max():+.1f}%\n"
-                     f"Worst District: {dnam_change['change_2021_2024'].min():+.1f}%")
-    
     create_map_with_legend(
         gdf_dnam_dissolved,
         f"Crude Incidence Change by District (2021 to 2024)",
         'district_change_overview_map.png',
-        overview_stats,
         filter_to_data=True,
         show_names=True,
         name_column='FIRST_DNAM',
@@ -348,13 +330,8 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             continue
         
         # Calculate statistics for CHIE within this DNAM
-        chie_stats = gdf_dnam_chie.groupby('FIRST_CHIE')['overall_pct_change'].agg(['mean', 'count']).reset_index()
-        chie_stats.columns = ['FIRST_CHIE', 'avg_change', 'count']
-        
-        stats_summary = (f"Chiefdoms in {first_dnam}: {len(gdf_dnam_chie)}\n"
-                        f"Administrative Units: {len(chie_stats)}\n"
-                        f"Avg Change: {gdf_dnam_chie['overall_pct_change'].mean():+.1f}%\n"
-                        f"Range: {gdf_dnam_chie['overall_pct_change'].min():+.1f}% to {gdf_dnam_chie['overall_pct_change'].max():+.1f}%")
+        chie_stats = gdf_dnam_chie.groupby('FIRST_CHIE')['overall_pct_change'].first().reset_index()
+        chie_stats.columns = ['FIRST_CHIE', 'change']
         
         safe_dnam_name = "".join(c for c in first_dnam if c.isalnum() or c in (' ', '-', '_')).rstrip()
         
@@ -362,7 +339,6 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
             gdf_dnam_chie,
             f"Chiefdom-Level Change within {first_dnam} (2021 to 2024)",
             f'chiefdom_level_change_map_{safe_dnam_name}.png',
-            stats_summary,
             filter_to_data=True,
             show_names=True,
             name_column='FIRST_CHIE',
@@ -370,17 +346,16 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
         )
     
     print(f"\n=== COMPREHENSIVE TREND MAPPING COMPLETE ===")
-    print(f"Created maps equivalent to all trend analyses:")
+    print(f"Created maps showing 2021 to 2024 change:")
     print(f"1. National overview map with DNAM boundaries and names (filtered view)")
     print(f"2. {len(first_dnam_values)} individual DNAM maps (filtered to areas of interest)")
-    print(f"3. District average overview map with names (filtered view)")
+    print(f"3. District change overview map with names (filtered view)")
     print(f"4. {len(first_dnam_values)} DNAM chiefdom-level maps with CHIE names (filtered views)")
-    print(f"\nColor scheme: RED = Increasing incidence, BLUE = Decreasing incidence")
+    print(f"\nColor scheme: PINK = Increasing incidence, BLUE = Decreasing incidence")
     print(f"All maps saved in: {output_dir}")
     print(f"\nNational Summary:")
     print(f"- Total chiefdoms analyzed: {total_chiefdoms}")
-    print(f"- National average change: {overall_avg:+.1f}%")
-    print(f"- Time period: {first_year} to {last_year}")
+    print(f"- Time period: 2021 to 2024")
     
     # Create summary statistics
     decreasing_count = len(gdf_valid[gdf_valid['overall_pct_change'] < 0])
@@ -389,9 +364,8 @@ def create_comprehensive_trend_maps(output_dir='trend_maps/'):
     
     print(f"\nTrend Distribution:")
     print(f"- Decreasing (blue): {decreasing_count} chiefdoms ({decreasing_count/total_chiefdoms*100:.1f}%)")
-    print(f"- Increasing (red): {increasing_count} chiefdoms ({increasing_count/total_chiefdoms*100:.1f}%)")
+    print(f"- Increasing (pink): {increasing_count} chiefdoms ({increasing_count/total_chiefdoms*100:.1f}%)")
     print(f"- Stable: {stable_count} chiefdoms ({stable_count/total_chiefdoms*100:.1f}%)")
-
 
 def combine_xls(file_path):
     # Combine the files
