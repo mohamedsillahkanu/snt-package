@@ -2209,7 +2209,7 @@ def plot_national_crude_trend_by_first_dnam(output_dir='plots/'):
         # Dynamic Y-axis
         y_values = avg_df['Crude_Incidence'].dropna()
         if len(y_values) > 0:
-            y_min = np.floor(y_values.min() / 5) * 5
+            y_min = 0
             y_max = np.ceil(y_values.max() / 5) * 5
             y_range = y_max - y_min
             
