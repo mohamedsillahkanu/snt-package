@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sierra Leone Rainfall Analysis Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #4ecdc4;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+        }
+
+        .header p {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+
+        select {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(78, 205, 196, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            min-width: 200px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h3 {
+            color: #4ecdc4;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            border-bottom: 2px solid rgba(78, 205, 196, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0a0;
+        }
+
+        .progress-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .progress-circle svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-circle circle {
+            fill: none;
+            stroke-width: 8;
+        }
+
+        .progress-bg {
+            stroke: rgba(255, 255, 255, 0.1);
+        }
+
+        .progress-bar {
+            stroke: #4ecdc4;
+            stroke-dasharray: 314;
+            stroke-dashoffset: 78.5;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .data-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.3s ease;
+        }
+
+        .data-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-low { background: #4ade80; }
+        .status-medium { background: #fbbf24; }
+        .status-high { background: #f97316; }
+        .status-critical { background: #ef4444; }
+
+        .location-name {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .rainfall-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .full-width-card {
+            grid-column: 1 / -1;
+            margin-top: 30px;
+        }
+
+        .bottom-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .data-table th {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(78, 205, 196, 0.3);
+        }
+
+        .alert {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🌧️ SIERRA LEONE RAINFALL ANALYSIS</h1>
+            <p>Maximum Rainfall Percentage by District & Chiefdom - 2024 Seasonal Data</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="districtSelect">Select District</label>
+                <select id="districtSelect">
+                    <option value="">All Districts</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="chiefdomSelect">Select Chiefdom</label>
+                <select id="chiefdomSelect">
+                    <option value="">All Chiefdoms</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="periodSelect">Analysis Period</label>
+                <select id="periodSelect">
+                    <option value="3">3-Month Maximum</option>
+                    <option value="4">4-Month Maximum</option>
+                    <option value="5">5-Month Maximum</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel -->
+            <div class="card">
+                <h3>📊 Analysis Overview</h3>
+                
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #4ecdc4;" id="avgRainfall">19.2%</div>
+                        <div class="stat-label">Average</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #ef4444;" id="maxRainfall">24.6%</div>
+                        <div class="stat-label">Maximum</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #4ade80;" id="minRainfall">16.0%</div>
+                        <div class="stat-label">Minimum</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #fbbf24;" id="locationCount">164</div>
+                        <div class="stat-label">Locations</div>
+                    </div>
+                </div>
+
+                <div class="progress-circle">
+                    <svg>
+                        <circle class="progress-bg" cx="60" cy="60" r="50"></circle>
+                        <circle class="progress-bar" cx="60" cy="60" r="50" id="progressCircle"></circle>
+                    </svg>
+                    <div class="progress-text" id="progressText">100%</div>
+                </div>
+                <p style="text-align: center; color: #a0a0a0;">Analysis Complete</p>
+
+                <button class="btn" onclick="refreshAnalysis()">🔄 Refresh Analysis</button>
+            </div>
+
+            <!-- Middle Panel -->
+            <div class="card">
+                <h3>📈 Rainfall Control Chart</h3>
+                <div class="chart-container">
+                    <canvas id="controlChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="card">
+                <h3>🏆 Top Rainfall Areas</h3>
+                <div class="data-list" id="topAreas">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- District Comparison Chart -->
+        <div class="card full-width-card">
+            <h3>🗺️ District Comparison Analysis</h3>
+            <div class="chart-container" style="height: 400px;">
+                <canvas id="districtChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="card full-width-card">
+            <h3>📋 Detailed Data Table</h3>
+            <div style="overflow-x: auto;">
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>District</th>
+                            <th>Chiefdom</th>
+                            <th>3-Month %</th>
+                            <th>4-Month %</th>
+                            <th>5-Month %</th>
+                            <th>Peak Start Month</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bottom Stats -->
+        <div class="bottom-stats">
+            <div class="card">
+                <div class="stat-value" style="color: #4ecdc4;" id="totalDistricts">14</div>
+                <div class="stat-label">Total Districts</div>
+            </div>
+            <div class="card">
+                <div class="stat-value" style="color: #3b82f6;" id="totalChiefdoms">164</div>
+                <div class="stat-label">Total Chiefdoms</div>
+            </div>
+            <div class="card">
+                <div class="stat-value" style="color: #fbbf24;" id="highestSingle">24.6%</div>
+                <div class="stat-label">Highest Rainfall</div>
+            </div>
+            <div class="card">
+                <div class="stat-value" style="color: #4ade80;" id="nationalAvg">19.2%</div>
+                <div class="stat-label">National Average</div>
+            </div>
+            <div class="card">
+                <div class="stat-value" style="color: #8b5cf6;" id="highRiskAreas">45</div>
+                <div class="stat-label">High Risk Areas</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sierra Leone rainfall data - filtering out zero/invalid entries
+        const rainfallData = [
+            { district: "BO", chiefdom: "BADJIA", max_3_month_pct: 18.31743935, max_3_month_start: 7, max_4_month_pct: 17.38093378, max_4_month_start: 6, max_5_month_pct: 16.90822079, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "BAGBO", max_3_month_pct: 18.68207104, max_3_month_start: 7, max_4_month_pct: 18.08048942, max_4_month_start: 6, max_5_month_pct: 17.31508752, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "BAGBWE(BAGBE)", max_3_month_pct: 18.0126831, max_3_month_start: 7, max_4_month_pct: 17.42017841, max_4_month_start: 6, max_5_month_pct: 17.03247023, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "BO TOWN", max_3_month_pct: 18.09339591, max_3_month_start: 7, max_4_month_pct: 17.74796596, max_4_month_start: 6, max_5_month_pct: 17.46181825, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "BOAMA", max_3_month_pct: 17.93076899, max_3_month_start: 7, max_4_month_pct: 17.40421278, max_4_month_start: 6, max_5_month_pct: 16.90067665, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "BONGOR", max_3_month_pct: 18.23483829, max_3_month_start: 7, max_4_month_pct: 17.63767575, max_4_month_start: 6, max_5_month_pct: 17.03573237, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "BUMPE NGAO", max_3_month_pct: 19.32468641, max_3_month_start: 7, max_4_month_pct: 18.24175456, max_4_month_start: 6, max_5_month_pct: 17.54627049, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "GBO", max_3_month_pct: 18.93646917, max_3_month_start: 7, max_4_month_pct: 17.97457047, max_4_month_start: 6, max_5_month_pct: 17.60947118, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "JAIAMA", max_3_month_pct: 18.05583339, max_3_month_start: 7, max_4_month_pct: 17.6000425, max_4_month_start: 6, max_5_month_pct: 16.98897636, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "KAKUA", max_3_month_pct: 18.4504314, max_3_month_start: 7, max_4_month_pct: 17.76292198, max_4_month_start: 6, max_5_month_pct: 17.32337768, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "KOMBOYA", max_3_month_pct: 18.27997836, max_3_month_start: 7, max_4_month_pct: 17.38557224, max_4_month_start: 6, max_5_month_pct: 17.06784468, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "LUGBU", max_3_month_pct: 18.80574428, max_3_month_start: 7, max_4_month_pct: 17.98713966, max_4_month_start: 6, max_5_month_pct: 17.32824973, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "NIAWA LENGA", max_3_month_pct: 18.42171361, max_3_month_start: 7, max_4_month_pct: 17.64336968, max_4_month_start: 6, max_5_month_pct: 17.2647761, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "SELENGA", max_3_month_pct: 18.71458893, max_3_month_start: 7, max_4_month_pct: 17.88521411, max_4_month_start: 6, max_5_month_pct: 17.48651916, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "TIKONKO", max_3_month_pct: 18.84708579, max_3_month_start: 7, max_4_month_pct: 17.8815897, max_4_month_start: 6, max_5_month_pct: 17.38163996, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "VALUNIA", max_3_month_pct: 18.90118789, max_3_month_start: 7, max_4_month_pct: 17.86717952, max_4_month_start: 7, max_5_month_pct: 17.47133184, max_5_month_start: 6 },
+            { district: "BO", chiefdom: "WONDE", max_3_month_pct: 17.82434677, max_3_month_start: 7, max_4_month_pct: 17.45443765, max_4_month_start: 6, max_5_month_pct: 16.87754503, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "BIRIWA", max_3_month_pct: 18.24725346, max_3_month_start: 7, max_4_month_pct: 18.10051862, max_4_month_start: 6, max_5_month_pct: 17.94694014, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "BOMBALI SEBORA", max_3_month_pct: 19.3936626, max_3_month_start: 7, max_4_month_pct: 18.67764007, max_4_month_start: 6, max_5_month_pct: 18.03456255, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "BOMBALI SIARI", max_3_month_pct: 19.41665479, max_3_month_start: 7, max_4_month_pct: 18.58766075, max_4_month_start: 6, max_5_month_pct: 17.9850736, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "GBANTI", max_3_month_pct: 19.32700837, max_3_month_start: 7, max_4_month_pct: 18.69170454, max_4_month_start: 6, max_5_month_pct: 18.07684824, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "GBENDEMBU", max_3_month_pct: 19.2876451, max_3_month_start: 7, max_4_month_pct: 18.78961148, max_4_month_start: 6, max_5_month_pct: 18.19288115, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "KAMARANKA", max_3_month_pct: 18.5888352, max_3_month_start: 7, max_4_month_pct: 18.57636706, max_4_month_start: 6, max_5_month_pct: 18.18729549, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "MAGBAIMBA NDORWAHUN", max_3_month_pct: 18.64708496, max_3_month_start: 7, max_4_month_pct: 18.5859083, max_4_month_start: 6, max_5_month_pct: 18.17962817, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "MAKARI", max_3_month_pct: 19.43551038, max_3_month_start: 6, max_4_month_pct: 18.6932219, max_4_month_start: 6, max_5_month_pct: 18.05379266, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "MARA", max_3_month_pct: 19.46847094, max_3_month_start: 7, max_4_month_pct: 18.65247221, max_4_month_start: 6, max_5_month_pct: 18.14416814, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "N'GOWAHUN", max_3_month_pct: 19.6160629, max_3_month_start: 7, max_4_month_pct: 18.84435071, max_4_month_start: 6, max_5_month_pct: 18.16255003, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "PAKI MASABONG", max_3_month_pct: 19.74393254, max_3_month_start: 7, max_4_month_pct: 18.41120228, max_4_month_start: 6, max_5_month_pct: 17.83729959, max_5_month_start: 6 },
+            { district: "BOMBALI", chiefdom: "SAFROKO LIMBA", max_3_month_pct: 19.33842308, max_3_month_start: 7, max_4_month_pct: 18.33662997, max_4_month_start: 6, max_5_month_pct: 17.86201825, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "BENDU-CHA", max_3_month_pct: 20.38880482, max_3_month_start: 7, max_4_month_pct: 19.62469845, max_4_month_start: 6, max_5_month_pct: 18.1416311, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "BONTHE URBAN", max_3_month_pct: 21.42933073, max_3_month_start: 6, max_4_month_pct: 20.32595402, max_4_month_start: 6, max_5_month_pct: 18.59221497, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "BUM", max_3_month_pct: 18.76350933, max_3_month_start: 7, max_4_month_pct: 18.49864604, max_4_month_start: 6, max_5_month_pct: 17.51603202, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "DEMA", max_3_month_pct: 21.67421089, max_3_month_start: 7, max_4_month_pct: 19.89848944, max_4_month_start: 6, max_5_month_pct: 18.61539769, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "IMPERRI", max_3_month_pct: 20.77778999, max_3_month_start: 7, max_4_month_pct: 19.4279578, max_4_month_start: 6, max_5_month_pct: 17.97115958, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "JONG", max_3_month_pct: 19.82620602, max_3_month_start: 7, max_4_month_pct: 19.11731502, max_4_month_start: 6, max_5_month_pct: 17.7679737, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "KPANDA KEMO", max_3_month_pct: 19.3895443, max_3_month_start: 7, max_4_month_pct: 18.43289685, max_4_month_start: 6, max_5_month_pct: 17.50726104, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "KWAMEBAI KRIM", max_3_month_pct: 20.23562537, max_3_month_start: 6, max_4_month_pct: 19.33170019, max_4_month_start: 6, max_5_month_pct: 17.98704333, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "NONGOBA BULLOM", max_3_month_pct: 20.3358165, max_3_month_start: 6, max_4_month_pct: 19.43458866, max_4_month_start: 6, max_5_month_pct: 18.01909959, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "SITTIA", max_3_month_pct: 21.413224, max_3_month_start: 7, max_4_month_pct: 20.1892107, max_4_month_start: 6, max_5_month_pct: 18.53869566, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "SOGBENI", max_3_month_pct: 18.79957896, max_3_month_start: 7, max_4_month_pct: 18.57279395, max_4_month_start: 6, max_5_month_pct: 17.49612838, max_5_month_start: 6 },
+            { district: "BONTHE", chiefdom: "YAWBEKO", max_3_month_pct: 19.56761455, max_3_month_start: 6, max_4_month_pct: 18.96194466, max_4_month_start: 6, max_5_month_pct: 17.69483641, max_5_month_start: 6 },
+            { district: "FALABA", chiefdom: "DELEMANDUGU", max_3_month_pct: 17.14876453, max_3_month_start: 7, max_4_month_pct: 17.17394292, max_4_month_start: 6, max_5_month_pct: 17.31513888, max_5_month_start: 6 },
+            { district: "FALABA", chiefdom: "DEMBELIA", max_3_month_pct: 17.90704389, max_3_month_start: 7, max_4_month_pct: 17.69355344, max_4_month_start: 6, max_5_month_pct: 17.87802626, max_5_month_start: 6 },
+            { district: "FALABA", chiefdom: "DEMBELIA-SINKUNIA", max_3_month_pct: 19.15613072, max_3_month_start: 7, max_4_month_pct: 18.21668751, max_4_month_start: 7, max_5_month_pct: 17.95586005, max_5_month_start: 6 },
+            { district: "FALABA", chiefdom: "FOLOSABA", max_3_month_pct: 19.79419701, max_3_month_start: 7, max_4_month_pct: 18.71763533, max_4_month_start: 6, max_5_month_pct: 18.28511841, max_5_month_start: 6 },
+            { district: "FALABA", chiefdom: "KAMADU YIRAIA", max_3_month_pct: 18.40199217, max_3_month_start: 7, max_4_month_pct: 17.8369116, max_4_month_start: 6, max_5_month_pct: 17.79951957, max_5_month_start: 6 },
+            { district: "FALABA", chiefdom: "KEBELIA", max_3_month_pct: 20.16068038, max_3_month_start: 7, max_4_month_pct: 18.81620294, max_4_month_start: 7, max_5_month_pct: 18.01467225, max_5_month_start: 6 },
+            { district: "KAILAHUN", chiefdom: "DEA", max_3_month_pct: 16.95875418, max_3_month_start: 7, max_4_month_pct: 16.66957401, max_4_month_start: 6, max_5_month_pct: 16.26247253, max_5_month_start: 6 },
+            { district: "KAILAHUN", chiefdom: "JAHN", max_3_month_pct: 16.04382273, max_3_month_start: 6, max_4_month_pct: 16.191724, max_4_month_start: 6, max_5_month_pct: 16.25842117, max_5_month_start: 6 },
+            { district: "KAILAHUN", chiefdom: "JAWIE", max_3_month_pct: 16.80566774, max_3_month_start: 7, max_4_month_pct: 16.50071271, max_4_month_start: 6, max_5_month_pct: 16.24944136, max_5_month_start: 6 },
+            { district: "KAMBIA", chiefdom: "BRAMAIA", max_3_month_pct: 20.87603938, max_3_month_start: 7, max_4_month_pct: 19.47553153, max_4_month_start: 6, max_5_month_pct: 18.5619791, max_5_month_start: 6 },
+            { district: "KAMBIA", chiefdom: "DIXON", max_3_month_pct: 21.46639438, max_3_month_start: 7, max_4_month_pct: 19.68221949, max_4_month_start: 6, max_5_month_pct: 18.59883424, max_5_month_start: 6 },
+            { district: "KAMBIA", chiefdom: "GBINLE", max_3_month_pct: 20.93232252, max_3_month_start: 7, max_4_month_pct: 19.33081116, max_4_month_start: 6, max_5_month_pct: 18.45824062, max_5_month_start: 6 },
+            { district: "KAMBIA", chiefdom: "SAMU", max_3_month_pct: 22.83983643, max_3_month_start: 7, max_4_month_pct: 20.26061679, max_4_month_start: 6, max_5_month_pct: 18.91819079, max_5_month_start: 6 },
+            { district: "KENEMA", chiefdom: "DAMA", max_3_month_pct: 17.75800628, max_3_month_start: 7, max_4_month_pct: 17.09163927, max_4_month_start: 6, max_5_month_pct: 16.53600709, max_5_month_start: 6 },
+            { district: "KENEMA", chiefdom: "DODO", max_3_month_pct: 17.63067458, max_3_month_start: 7, max_4_month_pct: 16.84235718, max_4_month_start: 6, max_5_month_pct: 16.42624563, max_5_month_start: 6 },
+            { district: "KENEMA", chiefdom: "KENEMA CITY", max_3_month_pct: 17.18736433, max_3_month_start: 7, max_4_month_pct: 16.75760446, max_4_month_start: 6, max_5_month_pct: 16.32259996, max_5_month_start: 6 },
+            { district: "KONO", chiefdom: "FIAMA", max_3_month_pct: 16.76998016, max_3_month_start: 7, max_4_month_pct: 16.52722056, max_4_month_start: 6, max_5_month_pct: 16.58046371, max_5_month_start: 6 },
+            { district: "KONO", chiefdom: "GBANE", max_3_month_pct: 16.99661187, max_3_month_start: 7, max_4_month_pct: 16.57555523, max_4_month_start: 7, max_5_month_pct: 16.32511964, max_5_month_start: 6 },
+            { district: "PORT LOKO", chiefdom: "BAKEH LOKO", max_3_month_pct: 19.80081389, max_3_month_start: 7, max_4_month_pct: 18.72684817, max_4_month_start: 6, max_5_month_pct: 18.23688651, max_5_month_start: 6 },
+            { district: "PORT LOKO", chiefdom: "BUREH", max_3_month_pct: 20.02659877, max_3_month_start: 7, max_4_month_pct: 18.77272158, max_4_month_start: 6, max_5_month_pct: 18.27738227, max_5_month_start: 6 },
+            { district: "PORT LOKO", chiefdom: "KAFFU BULLOM", max_3_month_pct: 23.09161664, max_3_month_start: 7, max_4_month_pct: 20.34913959, max_4_month_start: 6, max_5_month_pct: 18.85481804, max_5_month_start: 6 },
+            { district: "PORT LOKO", chiefdom: "LOKOMASAMA", max_3_month_pct: 22.67859702, max_3_month_start: 7, max_4_month_pct: 20.08949629, max_4_month_start: 6, max_5_month_pct: 18.73465767, max_5_month_start: 6 },
+            { district: "PUJEHUN", chiefdom: "BARRI", max_3_month_pct: 18.10128051, max_3_month_start: 7, max_4_month_pct: 17.67656043, max_4_month_start: 6, max_5_month_pct: 16.97726083, max_5_month_start: 6 },
+            { district: "PUJEHUN", chiefdom: "GALLINESS", max_3_month_pct: 19.0071828, max_3_month_start: 7, max_4_month_pct: 18.51195732, max_4_month_start: 6, max_5_month_pct: 17.43299833, max_5_month_start: 6 },
+            { district: "TONKOLILI", chiefdom: "DANSOGOIA", max_3_month_pct: 18.83807517, max_3_month_start: 7, max_4_month_pct: 17.89313861, max_4_month_start: 6, max_5_month_pct: 17.62498831, max_5_month_start: 6 },
+            { district: "TONKOLILI", chiefdom: "KHOLIFA MABANG", max_3_month_pct: 19.67342516, max_3_month_start: 7, max_4_month_pct: 18.64194953, max_4_month_start: 6, max_5_month_pct: 18.25102757, max_5_month_start: 6 },
+            { district: "WESTERN RURAL", chiefdom: "KOYA RURAL", max_3_month_pct: 21.45106015, max_3_month_start: 7, max_4_month_pct: 19.56137883, max_4_month_start: 6, max_5_month_pct: 18.30465278, max_5_month_start: 6 },
+            { district: "WESTERN RURAL", chiefdom: "MOUNTAIN RURAL", max_3_month_pct: 23.02687019, max_3_month_start: 7, max_4_month_pct: 20.57205677, max_4_month_start: 6, max_5_month_pct: 18.72353651, max_5_month_start: 6 },
+            { district: "WESTERN RURAL", chiefdom: "WATERLOO RURAL", max_3_month_pct: 22.53842914, max_3_month_start: 7, max_4_month_pct: 19.97742474, max_4_month_start: 6, max_5_month_pct: 18.47847428, max_5_month_start: 6 },
+            { district: "WESTERN RURAL", chiefdom: "YORK RURAL", max_3_month_pct: 23.3482053, max_3_month_start: 7, max_4_month_pct: 20.38658404, max_4_month_start: 6, max_5_month_pct: 18.68824238, max_5_month_start: 6 },
+            { district: "WESTERN URBAN", chiefdom: "CENTRAL I", max_3_month_pct: 23.47959152, max_3_month_start: 7, max_4_month_pct: 20.48067131, max_4_month_start: 7, max_5_month_pct: 18.81896488, max_5_month_start: 6 },
+            { district: "WESTERN URBAN", chiefdom: "EAST III", max_3_month_pct: 22.67278283, max_3_month_start: 7, max_4_month_pct: 20.20804084, max_4_month_start: 6, max_5_month_pct: 18.56681894, max_5_month_start: 6 },
+            { district: "WESTERN URBAN", chiefdom: "WEST III", max_3_month_pct: 24.63287237, max_3_month_start: 7, max_4_month_pct: 21.30692544, max_4_month_start: 7, max_5_month_pct: 19.23942722, max_5_month_start: 6 }
+        ].filter(d => d.max_3_month_pct > 0); // Filter out zero values
+
+        let currentData = rainfallData;
+        let controlChart = null;
+        let districtChart = null;
+
+        // Initialize the dashboard
+        function initializeDashboard() {
+            populateDistricts();
+            updateChiefdoms();
+            updateDashboard();
+            createCharts();
+        }
+
+        // Populate district dropdown
+        function populateDistricts() {
+            const districtSelect = document.getElementById('districtSelect');
+            const districts = [...new Set(rainfallData.map(d => d.district))].sort();
+            
+            districtSelect.innerHTML = '<option value="">All Districts</option>';
+            districts.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                districtSelect.appendChild(option);
+            });
+        }
+
+        // Update chiefdoms based on selected district
+        function updateChiefdoms() {
+            const districtSelect = document.getElementById('districtSelect');
+            const chiefdomSelect = document.getElementById('chiefdomSelect');
+            const selectedDistrict = districtSelect.value;
+            
+            chiefdomSelect.innerHTML = '<option value="">All Chiefdoms</option>';
+            
+            if (selectedDistrict) {
+                const chiefdoms = rainfallData
+                    .filter(d => d.district === selectedDistrict)
+                    .map(d => d.chiefdom)
+                    .sort();
+                
+                chiefdoms.forEach(chiefdom => {
+                    const option = document.createElement('option');
+                    option.value = chiefdom;
+                    option.textContent = chiefdom;
+                    chiefdomSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Update dashboard based on filters
+        function updateDashboard() {
+            const districtSelect = document.getElementById('districtSelect');
+            const chiefdomSelect = document.getElementById('chiefdomSelect');
+            const periodSelect = document.getElementById('periodSelect');
+            
+            const selectedDistrict = districtSelect.value;
+            const selectedChiefdom = chiefdomSelect.value;
+            const selectedPeriod = periodSelect.value;
+            
+            // Filter data
+            currentData = rainfallData.filter(d => {
+                if (selectedDistrict && d.district !== selectedDistrict) return false;
+                if (selectedChiefdom && d.chiefdom !== selectedChiefdom) return false;
+                return true;
+            });
+            
+            updateStatistics(selectedPeriod);
+            updateTopAreas(selectedPeriod);
+            updateDataTable(selectedPeriod);
+            createCharts();
+            updateBottomStats();
+        }
+
+        // Update statistics
+        function updateStatistics(period) {
+            const values = currentData.map(d => {
+                switch(period) {
+                    case '3': return d.max_3_month_pct;
+                    case '4': return d.max_4_month_pct;
+                    case '5': return d.max_5_month_pct;
+                    default: return d.max_3_month_pct;
+                }
+            }).filter(v => v > 0);
+            
+            if (values.length === 0) {
+                document.getElementById('avgRainfall').textContent = '0%';
+                document.getElementById('maxRainfall').textContent = '0%';
+                document.getElementById('minRainfall').textContent = '0%';
+                document.getElementById('locationCount').textContent = '0';
+                return;
+            }
+            
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            const max = Math.max(...values);
+            const min = Math.min(...values);
+            
+            document.getElementById('avgRainfall').textContent = avg.toFixed(1) + '%';
+            document.getElementById('maxRainfall').textContent = max.toFixed(1) + '%';
+            document.getElementById('minRainfall').textContent = min.toFixed(1) + '%';
+            document.getElementById('locationCount').textContent = values.length;
+        }
+
+        // Update bottom statistics
+        function updateBottomStats() {
+            const districts = [...new Set(currentData.map(d => d.district))];
+            const highRiskCount = currentData.filter(d => d.max_3_month_pct > 20).length;
+            const values = currentData.map(d => d.max_3_month_pct);
+            const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+            const max = values.length > 0 ? Math.max(...values) : 0;
+            
+            document.getElementById('totalDistricts').textContent = districts.length;
+            document.getElementById('totalChiefdoms').textContent = currentData.length;
+            document.getElementById('highestSingle').textContent = max.toFixed(1) + '%';
+            document.getElementById('nationalAvg').textContent = avg.toFixed(1) + '%';
+            document.getElementById('highRiskAreas').textContent = highRiskCount;
+        }
+
+        // Update top areas
+        function updateTopAreas(period) {
+            const topAreas = document.getElementById('topAreas');
+            const sortedData = [...currentData]
+                .map(d => ({
+                    ...d,
+                    currentValue: period === '3' ? d.max_3_month_pct : 
+                                 period === '4' ? d.max_4_month_pct : d.max_5_month_pct
+                }))
+                .sort((a, b) => b.currentValue - a.currentValue)
+                .slice(0, 10);
+                
+            topAreas.innerHTML = '';
+            
+            if (sortedData.length === 0) {
+                topAreas.innerHTML = '<div class="alert">No data available for current selection</div>';
+                return;
+            }
+            
+            sortedData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'data-item';
+                
+                const statusClass = item.currentValue > 22 ? 'status-critical' :
+                                   item.currentValue > 20 ? 'status-high' :
+                                   item.currentValue > 18 ? 'status-medium' : 'status-low';
+                
+                div.innerHTML = `
+                    <div class="location-info">
+                        <div class="status-indicator ${statusClass}"></div>
+                        <div>
+                            <div class="location-name">${item.district}</div>
+                            <div style="font-size: 0.8rem; color: #a0a0a0;">${item.chiefdom}</div>
+                        </div>
+                    </div>
+                    <div class="rainfall-value">${item.currentValue.toFixed(2)}%</div>
+                `;
+                
+                topAreas.appendChild(div);
+            });
+        }
+
+        // Update data table
+        function updateDataTable(period) {
+            const tableBody = document.getElementById('tableBody');
+            const sortedData = [...currentData]
+                .map(d => ({
+                    ...d,
+                    currentValue: period === '3' ? d.max_3_month_pct : 
+                                 period === '4' ? d.max_4_month_pct : d.max_5_month_pct,
+                    currentStart: period === '3' ? d.max_3_month_start : 
+                                 period === '4' ? d.max_4_month_start : d.max_5_month_start
+                }))
+                .sort((a, b) => b.currentValue - a.currentValue)
+                .slice(0, 50); // Show more rows in table
+                
+            tableBody.innerHTML = '';
+            
+            if (sortedData.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="7" style="text-align: center; color: #a0a0a0;">No data available for current selection</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            sortedData.forEach(item => {
+                const row = document.createElement('tr');
+                const statusClass = item.currentValue > 22 ? 'status-critical' :
+                                   item.currentValue > 20 ? 'status-high' :
+                                   item.currentValue > 18 ? 'status-medium' : 'status-low';
+                
+                const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                row.innerHTML = `
+                    <td>${item.district}</td>
+                    <td>${item.chiefdom}</td>
+                    <td style="text-align: right;">${item.max_3_month_pct.toFixed(2)}%</td>
+                    <td style="text-align: right;">${item.max_4_month_pct.toFixed(2)}%</td>
+                    <td style="text-align: right;">${item.max_5_month_pct.toFixed(2)}%</td>
+                    <td style="text-align: center;">${monthNames[item.currentStart] || item.currentStart}</td>
+                    <td style="text-align: center;"><div class="status-indicator ${statusClass}"></div></td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Create charts
+        function createCharts() {
+            createControlChart();
+            createDistrictChart();
+        }
+
+        // Create control chart
+        function createControlChart() {
+            const ctx = document.getElementById('controlChart').getContext('2d');
+            
+            if (controlChart) {
+                controlChart.destroy();
+            }
+            
+            if (currentData.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#a0a0a0';
+                ctx.textAlign = 'center';
+                ctx.font = '16px sans-serif';
+                ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            const top10 = [...currentData]
+                .sort((a, b) => b.max_3_month_pct - a.max_3_month_pct)
+                .slice(0, 10);
+                
+            const data = {
+                labels: top10.map((d, i) => `${i + 1}`),
+                datasets: [
+                    {
+                        label: 'UCL (22%)',
+                        data: Array(top10.length).fill(22),
+                        borderColor: '#ef4444',
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: 'Target (19%)',
+                        data: Array(top10.length).fill(19),
+                        borderColor: '#22d3ee',
+                        borderDash: [3, 3],
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: 'LCL (16%)',
+                        data: Array(top10.length).fill(16),
+                        borderColor: '#ef4444',
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: 'Rainfall %',
+                        data: top10.map(d => d.max_3_month_pct),
+                        borderColor: '#fbbf24',
+                        backgroundColor: '#fbbf24',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: false
+                    }
+                ]
+            };
+            
+            controlChart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: 'white' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return `${top10[index].district} - ${top10[index].chiefdom}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            suggestedMin: 14,
+                            suggestedMax: 26
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create district comparison chart
+        function createDistrictChart() {
+            const ctx = document.getElementById('districtChart').getContext('2d');
+            
+            if (districtChart) {
+                districtChart.destroy();
+            }
+            
+            if (currentData.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#a0a0a0';
+                ctx.textAlign = 'center';
+                ctx.font = '16px sans-serif';
+                ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            // Calculate district averages
+            const districts = [...new Set(currentData.map(d => d.district))];
+            const districtData = districts.map(district => {
+                const districtItems = currentData.filter(d => d.district === district);
+                const avg3 = districtItems.reduce((sum, d) => sum + d.max_3_month_pct, 0) / districtItems.length;
+                const avg4 = districtItems.reduce((sum, d) => sum + d.max_4_month_pct, 0) / districtItems.length;
+                const avg5 = districtItems.reduce((sum, d) => sum + d.max_5_month_pct, 0) / districtItems.length;
+                
+                return {
+                    district,
+                    avg3: avg3 || 0,
+                    avg4: avg4 || 0,
+                    avg5: avg5 || 0
+                };
+            }).filter(d => d.avg3 > 0);
+            
+            const data = {
+                labels: districtData.map(d => d.district),
+                datasets: [
+                    {
+                        label: '3-Month Max',
+                        data: districtData.map(d => d.avg3),
+                        backgroundColor: 'rgba(74, 222, 128, 0.8)',
+                        borderColor: '#4ade80',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '4-Month Max',
+                        data: districtData.map(d => d.avg4),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '5-Month Max',
+                        data: districtData.map(d => d.avg5),
+                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                        borderColor: '#8b5cf6',
+                        borderWidth: 1
+                    }
+                ]
+            };
+            
+            districtChart = new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: 'white' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { 
+                                color: 'white',
+                                maxRotation: 45
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            title: {
+                                display: true,
+                                text: 'Rainfall %',
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Refresh analysis animation
+        function refreshAnalysis() {
+            const progressCircle = document.getElementById('progressCircle');
+            const progressText = document.getElementById('progressText');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                }
+                
+                const dashOffset = 314 - (progress / 100) * 314;
+                progressCircle.style.strokeDashoffset = dashOffset;
+                progressText.textContent = progress + '%';
+            }, 30);
+            
+            // Refresh the dashboard data
+            setTimeout(() => {
+                updateDashboard();
+            }, 1000);
+        }
+
+        // Event listeners
+        document.getElementById('districtSelect').addEventListener('change', function() {
+            updateChiefdoms();
+            updateDashboard();
+        });
+
+        document.getElementById('chiefdomSelect').addEventListener('change', updateDashboard);
+        document.getElementById('periodSelect').addEventListener('change', updateDashboard);
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            
+            // Set initial progress circle to 100%
+            const progressCircle = document.getElementById('progressCircle');
+            const progressText = document.getElementById('progressText');
+            progressCircle.style.strokeDashoffset = 0;
+            progressText.textContent = '100%';
+        });
+    </script>
+</body>
+</html>
