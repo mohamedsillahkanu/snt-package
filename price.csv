@@ -1,0 +1,181 @@
+Item No.,Description,Country of Origin,Quantity,Unit Price (SLE),Unit Price (USD),Total Price (SLE),Total Price (USD)
+1,HP 23.8-inch All-in-One Desktop PC (Core i3, 8GB, 256GB SSD, Win11),China,5,11700.00,519.32,58500.00,2596.60
+2,HP 27" FHD IPS All in One Desktop PC (Ryzen 7, 16GB, 1TB SSD, Win11 Pro),China,3,31500.00,1398.16,94500.00,4194.48
+3,Dell Pro Slim QCS1250 Desktop (Core i7, 16GB DDR5, 1TB PCIe SSD, Win11),China,4,29700.00,1318.27,118800.00,5273.08
+4,HP ProLiant BL460c G7 Blade Server (2x X5660 Xeon, 48GB, 2x146GB),China,2,36000.00,1597.69,72000.00,3195.38
+5,Dell Tower Desktop ECT1250 (Core Ultra 7, 32GB, 1TB SSD, Win11),China,3,18000.00,798.85,54000.00,2396.55
+6,Lenovo ThinkPad X13 Yoga Laptop (i5-10210U, 16GB, 256GB SSD, Win11 Pro),China,5,26000.00,1154.04,130000.00,5770.20
+7,Lenovo ThinkPad X1 Carbon Gen 13 (Ultra 7 266V, 16GB, 512GB SSD),China,3,55000.00,2441.23,165000.00,7323.69
+8,HP Envy x360 2-in-1 Laptop (14" FHD, Core 5 120U, 8GB, 512GB SSD),China,4,35000.00,1553.51,140000.00,6214.04
+9,Lenovo V15 Gen 4 Laptop (15.6" FHD, i5-13420H, 16GB, 512GB SSD),China,5,20000.00,887.72,100000.00,4438.60
+10,HP Omni Book 5 Laptop (16" Touch, Ultra 7 255U, 16GB, 512GB SSD),China,3,40000.00,1775.44,120000.00,5326.32
+12,HP Omni Book 7 Flip 2-in-1 Laptop (14" 2K, Ultra i7 256V, 16GB, 1TB),China,3,47000.00,2086.14,141000.00,6258.42
+13,Lenovo ThinkPad X1 Carbon Gen 13 (14" 2.8K, Ultra 7 266V, 16GB, 512GB),China,3,55000.00,2441.23,165000.00,7323.69
+14,Lenovo ThinkPad E14 (i5 10th Gen, 8GB, 1TB HDD+128GB SSD, Win10),China,5,26000.00,1154.04,130000.00,5770.20
+15,Lenovo ThinkPad 15.6" Laptop (Core i7 10th Gen, 16GB, 512GB SSD),China,4,32000.00,1420.35,128000.00,5681.40
+16,Apple MacBook Pro 16" (16GB RAM, 1TB Storage, Core i9),China,2,40000.00,1775.44,80000.00,3550.88
+17,Microsoft Surface Pro X Convertible Laptop (SQ1, 8GB, 128GB SSD),China,3,38000.00,1686.67,114000.00,5060.01
+18,Microsoft Surface Pro 7 (i5 10th Gen, 8GB, 128GB SSD),China,3,30000.00,1331.58,90000.00,3994.74
+19,ASUS Zenbook 14 OLED Laptop (Ultra 9 285H, 32GB, 1TB SSD),China,3,40000.00,1775.44,120000.00,5326.32
+20,Dell Inspiron 15.6" Laptop (i5-1334U, 32GB, 1TB PCIe SSD),China,4,18000.00,798.95,72000.00,3195.80
+21,Dell 15 Laptop (i7-1355U, 16GB, 512GB SSD, 120Hz Display),China,3,28000.00,1242.81,84000.00,3728.43
+22,Samsung Galaxy S25+ (512GB, Unlocked, Snapdragon 8 Elite),China,5,11700.00,519.32,58500.00,2596.60
+23,Samsung Galaxy S25 FE (256GB, Unlocked, 5G),China,5,9000.00,399.47,45000.00,1997.35
+24,Samsung Galaxy A05 (128GB, 4GB RAM, Dual SIM, Unlocked),China,10,4500.00,199.74,45000.00,1997.40
+25,Samsung Galaxy A16 4G LTE (128GB+4GB, 6.7", 50MP Camera),China,10,5000.00,221.93,50000.00,2219.30
+26,Samsung Galaxy S20+ 5G (128GB, 12GB, 120Hz AMOLED, IP68),China,5,7000.00,310.70,35000.00,1553.50
+27,Samsung Galaxy Tab S10 Ultra (14.6", 256GB+12GB, S Pen),China,5,12500.00,554.83,62500.00,2774.15
+28,Samsung Galaxy Tab A9+ (11", 64GB, Quad Speakers),China,10,5000.00,221.93,50000.00,2219.30
+29,Samsung Galaxy Tab S11 (128GB WiFi, S Pen),China,5,9000.00,399.47,45000.00,1997.35
+30,Samsung Galaxy Tab S9 FE+ WiFi (8GB, 128GB, SIM Slot, S Pen),China,5,8000.00,355.09,40000.00,1775.45
+31,Timecity Case for Samsung Galaxy Tab S10 Lite/S9 FE (Heavy Duty),China,20,1100.00,48.82,22000.00,976.40
+32,Logitech 2.4G Wireless Mouse,China,50,250.00,11.10,12500.00,555.00
+33,2.4G Optical/Corded Mouse,China,50,200.00,8.88,10000.00,444.00
+34,Canon image FORMULA R40 Scanner (Duplex, Scans to Cloud),China,5,7000.00,310.70,35000.00,1553.50
+35,Epson Workforce ES-400 II Scanner (Color Duplex with ADF),China,3,15000.00,665.79,45000.00,1997.37
+36,ScanSnap iX2400 Scanner (100 Page ADF, One-Touch Button),China,3,12000.00,532.63,36000.00,1597.89
+37,PS2 Keyboard,China,30,250.00,11.10,7500.00,333.00
+38,USB Keyboard,China,30,250.00,11.10,7500.00,333.00
+39,Logitech MK220 Wireless Combo (Keyboard and Mouse),China,20,400.00,17.75,8000.00,355.00
+45,Dell USB 3.0 Docking Station (Ultra HD, 4K Triple Display),China,10,7000.00,310.70,70000.00,3107.00
+46,Tri-Band Wi-Fi Router (AC2200 MU-MIMO),China,10,5000.00,221.93,50000.00,2219.30
+47,Wireless Wi-Fi Tri-Band Gigabit Router (Archer C3200),China,10,8000.00,355.09,80000.00,3550.90
+48,300Mbps Wireless Router (2.4GHz, 1 WAN, 2 LAN),China,20,2000.00,88.77,40000.00,1775.40
+49,Integrated Services Router or Equivalent,China,5,5000.00,221.93,25000.00,1109.65
+50,Cisco 3750 Gigabit POE 48 Port Switch (WS-C3750 48PS-S),China,3,12000.00,532.63,36000.00,1597.89
+51,Extralink 24 Port Cat6 STP Patch Panel V2,China,10,2000.00,88.77,20000.00,887.70
+52,Extralink 48 Port Cat6 STP Patch Panel V2,China,10,2500.00,110.97,25000.00,1109.70
+53,Ubiquiti POE-24-12W-G PoE Injector (12W, Black),China,20,10000.00,443.86,200000.00,8877.20
+54,1000M 2 SFP + 4 Port Optical Fiber POE Gigabit Switch,China,10,12000.00,532.63,120000.00,5326.30
+55,Ubiquiti UniFi AP AC LR (Long Range) Access Point,China,15,5000.00,221.93,75000.00,3328.95
+56,ePMP Cambium Network (2.4 GHz, 5/10/20/40 MHz),China,5,5200.00,230.81,26000.00,1154.05
+57,Ubiquiti UniFi AP AC PRO Enterprise Wi-Fi Access Point,China,10,6000.00,266.32,60000.00,2663.20
+58,600W Electric Handheld Air Blower (Computer Vacuum),China,10,2000.00,88.77,20000.00,887.70
+59,Multifunctional Network Crimping Tool (RJ45/RJ11/RJ12),China,20,1300.00,57.70,26000.00,1154.00
+60,RJ45 Faceplate Wall Socket (Cat5e/CAT6, Single),China,50,20.00,0.89,1000.00,44.50
+61,RJ45 Faceplate Wall Socket (Cat5e/CAT6, Double),China,50,40.00,1.78,2000.00,89.00
+62,D-Link Wireless N-300 Desktop Wi-Fi PCI Adapter (DWA-525),China,20,1100.00,48.82,22000.00,976.40
+63,Mobile WiFi 4G LTE CAT4 (1500mAh, up to 150Mbps),China,30,650.00,28.85,19500.00,865.50
+64,Portable 4G LTE WiFi Router (Mobile Hotspot SIM Card),China,20,1200.00,53.26,24000.00,1065.20
+65,500GB External Hard Drive,China,30,1400.00,62.14,42000.00,1864.20
+66,1TB External Hard Drive,China,30,1500.00,66.58,45000.00,1997.40
+67,2TB External Hard Drive,China,20,2500.00,110.97,50000.00,2219.40
+68,4TB External Hard Drive,China,20,3200.00,142.04,64000.00,2840.80
+69,8GB USB Flash Drive,China,100,70.00,3.11,7000.00,311.00
+70,16GB USB Flash Drive,China,100,110.00,4.88,11000.00,488.00
+71,32GB USB Flash Drive,China,100,120.00,5.33,12000.00,533.00
+72,64GB USB Flash Drive,China,100,170.00,7.55,17000.00,755.00
+73,128GB USB Flash Drive,China,50,400.00,17.75,20000.00,887.50
+74,8GB Memory Card,China,50,70.00,3.11,3500.00,155.50
+75,16GB Memory Card,China,50,110.00,4.88,5500.00,244.00
+76,64GB Memory Card,China,50,250.00,11.10,12500.00,555.00
+77,DVD-R 16X 4.7GB 120 Min (350 x 2),China,50,500.00,22.19,25000.00,1109.50
+78,Mini CD-RW Rewritable 21min 185mb (8cm, with Jewel Case),China,50,300.00,13.32,15000.00,666.00
+79,CD-R Compact Disc (with storage case),China,50,200.00,8.88,10000.00,444.00
+80,4K Ultra HD 8 Channel Security DVR (2TB Hard Drive),China,5,2500.00,110.97,12500.00,554.85
+81,IP-CAM 50,China,20,3000.00,133.16,60000.00,2663.20
+82,720P Full HD Webcam (USB 2.0, with Microphone),China,30,400.00,17.75,12000.00,532.50
+83,Pan-Tilt-Zoom Outdoor Camera (4x Optical Zoom, 1080p, Night Vision),China,20,600.00,26.63,12000.00,532.60
+84,Wi-Fi PTZ Camera (4MP 2K, 4X Optical Zoom, IK10, IP66),China,15,3000.00,133.16,45000.00,1997.40
+85,Logitech C270 HD Webcam (720p, Built-in Mic),China,30,200.00,8.88,6000.00,266.40
+86,12v 7.2ah UPS Battery,China,20,3000.00,133.16,60000.00,2663.20
+87,APC Smart-UPS 750VA LCD 230V (SmartConnect),China,10,8000.00,355.09,80000.00,3550.90
+88,APC 1500VA Smart UPS (SMC1500C, Sinewave, AVR),China,10,12000.00,532.63,120000.00,5326.30
+89,APC 750VA Smart UPS (SMT750RM2UCNC, Rackmount 2U, Network Card),China,10,10000.00,443.86,100000.00,4438.60
+90,Twisted-Pair CAT5 Cable (Small),China,20,2800.00,124.28,56000.00,2485.60
+91,Twisted-Pair CAT6 Cable,China,20,3700.00,164.23,74000.00,3284.60
+92,Twisted-Pair CAT7E Cable (Rolls),China,20,550.00,24.41,11000.00,488.20
+93,Coaxial Cable RG-6 (Rolls),China,15,700.00,31.07,10500.00,466.05
+94,Coaxial Cable RG-6 (Rolls),China,15,700.00,31.07,10500.00,466.05
+95,Coaxial Cable RG-59 (Rolls),China,15,600.00,26.63,9000.00,399.45
+96,Norton Antivirus 2019 (1 User, 1 Year, PC/Mac/iOS/Android),China,50,300.00,13.32,15000.00,666.00
+97,McAfee Antivirus 2019 (1 User, 1 Year, PC),China,50,500.00,22.19,25000.00,1109.50
+98,Kaspersky Internet Security (1 User, 1 Year),China,50,900.00,39.95,45000.00,1997.50
+99,Kaspersky Antivirus Total Security,China,30,1300.00,57.70,39000.00,1731.00
+100,Eset Anti-Virus (1 User),China,30,400.00,17.75,12000.00,532.50
+101,Eset Smart Security Premium License (1 User),China,30,1000.00,44.39,30000.00,1331.70
+102,MS Office Professional Edition 2021 (Business License),China,20,3000.00,133.16,60000.00,2663.20
+103,MS Office Professional Edition 2019 (Business License),China,20,2500.00,110.97,50000.00,2219.40
+104,Microsoft Windows Server 2012,China,10,2500.00,110.97,25000.00,1109.70
+105,Microsoft Windows 10 Enterprise (1 User),China,30,800.00,35.51,24000.00,1065.30
+106,Tableau Business Intelligence Software (4 concurrent licenses),China,5,2500.00,110.97,12500.00,554.85
+107,Zebra C300 or Fargo DTC Cleaning Kit 86177,China,5,33000.00,1464.74,165000.00,7323.70
+108,Veeam Backup & Replication Enterprise for Vmware (2 sockets),China,5,2000.00,88.77,10000.00,443.85
+109,Apple iPad Pro Wi-Fi + Cellular (256GB, 12.9"),China,5,15000.00,665.79,75000.00,3328.95
+110,Apple iPad Pro 12.9" 1TB,China,3,20000.00,887.72,60000.00,2663.16
+111,Samsung Galaxy A01 (16GB RAM, 2GB Storage, Android 8),China,10,2500.00,110.97,25000.00,1109.70
+112,Samsung Galaxy A51 LTE (128GB, 6.5" AMOLED),China,5,6000.00,266.32,30000.00,1331.60
+113,Samsung Galaxy S9 Plus (64GB, 6GB RAM, Android 8),China,5,7000.00,310.70,35000.00,1553.50
+114,Samsung Galaxy A36 5G (128GB, AMOLED, US Version 2025),China,10,5500.00,244.12,55000.00,2441.20
+115,Samsung Galaxy A56 5G (256GB, 12GB, 6.7" 120Hz, IP67),China,10,6500.00,288.50,65000.00,2885.00
+116,Samsung Galaxy S8+ Plus (64GB, 4G LTE, Factory Unlocked),China,5,5000.00,221.93,25000.00,1109.65
+117,Samsung Galaxy S9+ Plus (64GB, 6GB RAM, 6.2", IP68),China,5,6500.00,288.50,32500.00,1442.50
+118,iPhone 13 Pro Max (256GB, 6GB RAM, iOS),China,5,18000.00,798.95,90000.00,3994.75
+119,iPhone 11 (128GB, 4GB RAM, iOS),China,5,12000.00,532.63,60000.00,2663.15
+120,iPhone 8 Plus (128GB, 4GB RAM, iOS),China,5,8000.00,355.09,40000.00,1775.45
+121,iPhone 15 Pro Max (1TB, 8GB RAM, iOS),China,3,25000.00,1109.65,75000.00,3328.95
+122,Samsung Galaxy A36 5G (128GB, AMOLED, US 2025, Lavender),China,10,5500.00,244.12,55000.00,2441.20
+123,Tecno Camon 30 Pro (6GB+128GB, 5G, 6800mAh, Android 13),China,10,4000.00,177.54,40000.00,1775.40
+124,S25U Mobile Phone (16+512GB, 7000mAh, 108MP Camera, Android 16),China,5,7500.00,332.89,37500.00,1664.45
+125,30 Pro Unlocked Phone (6GB+128GB, 5G, 6800mAh, Android 13),China,10,4000.00,177.54,40000.00,1775.40
+126,Motorola Android Phone (8GB RAM, 2.4GHz, 8GB Storage),China,10,3500.00,155.35,35000.00,1553.50
+127,Samsung Galaxy A36 5G (128GB, 6GB RAM, Unlocked),China,10,5500.00,244.12,55000.00,2441.20
+128,Samsung Galaxy A26 5G (256GB, 8GB, 6.7" 120Hz, IP67),China,10,6000.00,266.32,60000.00,2663.20
+129,Canon iR 2520 Photocopier (Standing Type, Duplex, ADF),China,3,38000.00,1686.67,114000.00,5060.01
+130,Canon IR2206 Copier (A3 B/W, Print, Scan, Copy, 22 PPM),China,5,12000.00,532.63,60000.00,2663.15
+131,Canon Color image CLASS MF753Cdw II (35 PPM, Wireless, All-in-One),China,3,25000.00,1109.65,75000.00,3328.95
+132,HP LaserJet MFP M72625 DN Digital Mono Photocopier,China,3,8000.00,355.09,24000.00,1065.27
+134,B&W Laser Photocopier (22 PPM, A3/A4/B4/B5, USB 2.0),China,3,20000.00,887.72,60000.00,2663.16
+135,HP LaserJet Pro MFP 4101fdn (B&W, Print, Scan, Copy, Fax),China,5,13000.00,577.02,65000.00,2885.10
+136,HP Color LaserJet Pro MFP M479fdn (Color, 27 ppm),China,5,18000.00,798.95,90000.00,3994.75
+137,HP Color LaserJet Managed Flow MFP E57540c (40 ppm, 120k pages/month),China,2,35000.00,1553.51,70000.00,3107.02
+138,HP M477FNW Wireless Color Printer (28 ppm, Scanner, Copier, Fax),China,5,18000.00,798.95,90000.00,3994.75
+139,MP C3004 Color Laser MFP (30 ppm, 1200 dpi),China,3,22000.00,976.45,66000.00,2929.35
+140,HP LaserJet Pro MFP M28A (Monochrome, Print, Copy, Scan),China,10,6000.00,266.32,60000.00,2663.20
+141,Canon iR2625i MFP with DADF (A3 Mono, 2.0 GB RAM),China,3,40000.00,1775.44,120000.00,5326.32
+142,HP LaserJet Pro MFP 4101fdw (B&W, 42 ppm, Wireless, Duplex),China,5,15000.00,665.79,75000.00,3328.95
+143,HP Color LaserJet Pro MFP M479fdw (Color, 28 ppm, ADF, Touchscreen),China,5,25000.00,1109.65,125000.00,5548.25
+148,HP LaserJet Color Pro MFP281fdm (Color, 21 ppm, ADF, Duplex),China,5,19000.00,843.33,95000.00,4216.65
+149,HP LaserJet Color Pro MFP277dw (Color, 19 ppm, ADF 50 sheets),China,5,16000.00,710.18,80000.00,3550.90
+150,HP Color LaserJet Pro MFP 3301fdw (26 ppm, Wireless, All-in-One),China,5,20000.00,887.72,100000.00,4438.60
+151,HP LaserJet Pro 500 Color MFP (31 ppm),China,3,16000.00,710.18,48000.00,2130.54
+152,HP LaserJet Pro MFP 4101fdw (B&W, 42 ppm, Wireless),China,5,14000.00,621.40,70000.00,3107.00
+153,HP LaserJet Enterprise MFP M577dn (Color, 40 ppm),China,3,16000.00,710.18,48000.00,2130.54
+154,Canon LCOS WUX5800 Projector,China,3,14000.00,621.40,42000.00,1864.20
+155,Cannon image FORMULAR DR-C230 Scanner,China,3,500.00,22.19,1500.00,66.57
+156,Video Camera (2.5" LCD Swivel Screen, 3-Way Power),China,5,8000.00,355.09,40000.00,1775.45
+157,Panasonic 4K LUMIX G Digital Camera (20.3 MP, 5-Axis),China,3,12000.00,532.63,36000.00,1597.89
+158,Canon EOS 5D Mark IV Camera with Lens,China,2,25000.00,1109.65,50000.00,2219.30
+159,Digital SLR Camera with EF 24-105mm f/4L IS USM Lens,China,2,22000.00,976.45,44000.00,1952.90
+160,CO2 2kg Fire Extinguisher (Class B & C),China,20,1500.00,66.58,30000.00,1331.60
+161,CO2 6kg Fire Extinguisher (Class B & C),China,20,2500.00,110.97,50000.00,2219.40
+162,6 Litre Foam Fire Extinguisher (Class A & B, AFFF),China,20,3000.00,133.16,60000.00,2663.20
+163,Epson Epiq Vision Flex CO-FH02 Projector (1080p, 3000 Lumens, Android TV),China,3,10000.00,443.86,30000.00,1331.58
+164,Epson EX3290 Projector (WXGA, 4000 Lumens),China,3,8000.00,355.09,24000.00,1065.27
+165,Epson Home Cinema 1100 Projector (1080p, 3400 Lumens, Wireless),China,3,9000.00,399.47,27000.00,1198.41
+166,Tecaki Mini Portable Projector (1080P HD, WiFi, Bluetooth),China,5,8000.00,355.09,40000.00,1775.45
+167,Mini 4K Portable Projector (200 ANSI, Auto Keystone),China,5,5000.00,221.93,25000.00,1109.65
+168,Fortinet FortiGate-60E Next Generation Firewall (10 x GE RJ45),China,5,18000.00,798.95,90000.00,3994.75
+169,Fortinet FortiGate-50G Firewall with 3-Year Security Services,China,5,25000.00,1109.65,125000.00,5548.25
+170,Fortinet FG-60F FortiGate 60F Firewall,China,5,20000.00,887.72,100000.00,4438.60
+180,Cisco Catalyst 1200-8P-E-2G Smart Switch (8 Port GE, PoE),China,10,8000.00,355.09,80000.00,3550.90
+181,Cisco Catalyst 1200-48P-4G Smart Switch (48 Port GE, PoE),China,5,25000.00,1109.65,125000.00,5548.25
+182,Cisco Catalyst 1300-24P-4G Managed Switch (24 Port GE, PoE),China,5,18000.00,798.95,90000.00,3994.75
+183,Cisco ISR4331/K9 ISR 4331 Integrated Service Router,China,3,35000.00,1553.51,105000.00,4660.53
+184,CAT5E Plenum Ethernet Cable 1000ft (UTP 24AWG, 350MHz),China,10,8000.00,355.09,80000.00,3550.90
+185,Cat 7 Ethernet Cable 200ft (SFTP Triple Shielded, 10Gbps 600MHz),China,10,12000.00,532.63,120000.00,5326.30
+186,GEARit Shielded CAT6 Ethercon Cable 300ft (RJ45 EtherCON),China,10,15000.00,665.79,150000.00,6657.90
+187,HDMI Switch 4 in 1 Out (4K@30Hz, Remote Control),China,20,2000.00,88.77,40000.00,1775.40
+189,Tech Digital 4K HD BaseT HDMI Extender (over Cat5e/6, up to 230ft),China,10,5000.00,221.93,50000.00,2219.30
+190,BENFEI USB-C to Gigabit Ethernet Adapter (3-Port USB 3.0 Hub),China,20,1500.00,66.58,30000.00,1331.60
+191,Ubiquiti Networks Cloud Key Gen2 (UCK-G2-SSD),China,5,12000.00,532.63,60000.00,2663.15
+192,AT&T 5-Handset DECT 6.0 Cordless Phone (5" Color Display, Answering Machine),China,10,8000.00,355.09,80000.00,3550.90
+193,NavePoint 9U Server Cabinet (Wall Mount, 17.7" Deep, Locking Glass Door),China,5,7000.00,310.70,35000.00,1553.50
+194,NavePoint 12U Server Cabinet (Wall Mount, 23.6" Deep, Locking Glass Door),China,5,9000.00,399.47,45000.00,1997.35
+195,Tripp Lite SR48UB 48U Rack Enclosure (3000lb Capacity),China,3,25000.00,1109.65,75000.00,3328.95
+196,135W AC Charger for Lenovo ThinkPad X1 Extreme, W540, T440, etc.,China,20,1500.00,66.58,30000.00,1331.60
+197,USB C Super Charger 65W/45W for Lenovo ThinkPad X1 Carbon Gen 5-13,China,30,1200.00,53.26,36000.00,1597.80
+198,Replacement Battery for Lenovo ThinkPad X1 Carbon,China,20,2500.00,110.97,50000.00,2219.40
+199,100W/90W USB C Charger for Lenovo ThinkPad Carbon X1, IdeaPad, Yoga,China,30,1800.00,79.89,54000.00,2396.70
+,,,,,,,
+GRAND TOTAL,,,,10382800.00,460820.21
